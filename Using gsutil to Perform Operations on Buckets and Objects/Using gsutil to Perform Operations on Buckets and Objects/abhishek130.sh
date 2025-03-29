@@ -26,4 +26,4 @@ gsutil rm -rf gs://${BUCKET}/*
 
 gsutil rb gs://${BUCKET}
 
-here is the file make it 
+
