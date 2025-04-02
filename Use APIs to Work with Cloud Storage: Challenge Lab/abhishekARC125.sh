@@ -14,7 +14,7 @@ BOLD=$'\033[1m'
 clear
 # Welcome message with better design
 echo "${HEADER_COLOR}${BOLD}╔════════════════════════════════════════╗${RESET}"
-echo "${HEADER_COLOR}${BOLD}║    GOOGLE CLOUD STORAGE API SCRIPT     ║${RESET}"
+echo "${HEADER_COLOR}${BOLD}║    wELCOME TO DR ABHISHEK CLOUD JOURNEY    ║${RESET}"
 echo "${HEADER_COLOR}${BOLD}╚════════════════════════════════════════╝${RESET}"
 echo
 echo "${INFO_COLOR}Initializing Google Cloud Storage operations...${RESET}"
@@ -122,7 +122,7 @@ success "Bucket1 deleted successfully"
 # Completion message
 echo
 echo "${SUCCESS_COLOR}${BOLD}╔════════════════════════════════════════╗${RESET}"
-echo "${SUCCESS_COLOR}${BOLD}║       OPERATIONS COMPLETED SUCCESSFULLY ║${RESET}"
+echo "${SUCCESS_COLOR}${BOLD}║       OPERATIONS COMPLETED SUCCESSFULLY  ║${RESET}"
 echo "${SUCCESS_COLOR}${BOLD}╚════════════════════════════════════════╝${RESET}"
 echo
 echo "${INFO_COLOR}For more tutorials, visit: ${ACTION_COLOR}https://www.youtube.com/@drabhishek.5460${RESET}"
