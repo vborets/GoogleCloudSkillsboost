@@ -144,6 +144,6 @@ gcloud alpha monitoring policies create --policy-from-file="awesome.json"
 
 
 # Final message
-echo -e "\n${GREEN}${BOLD}Lab Completed Successfully!${RESET}"
+echo -e "\n${GREEN}${BOLD}You have successfully set up and monitored a VM with Cloud Monitoring. You've also created an uptime check, an alerting policy, and a dashboard and chart. You've seen how Cloud Logging reflects changes to your VM instance${RESET}"
 echo -e "${CYAN}Please like and subscribe to: https://www.youtube.com/@drabhishek.5460${RESET}"
 #-----------------------------------------------------end----------------------------------------------------------#
