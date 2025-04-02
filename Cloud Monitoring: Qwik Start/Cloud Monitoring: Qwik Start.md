@@ -28,10 +28,7 @@ curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost
 sudo chmod +x abhishekGSP089.sh
 ./abhishekGSP089.sh
 ```
-* Go to 'Create Uptime Check' from [here](https://console.cloud.google.com/monitoring/uptime/create?)
-* For Title, type or copy ```Lamp Uptime Check```
 
-Congratulations 🎉 for completing the Lab !
 
 *You have successfully set up and monitored a VM with Cloud Monitoring. You've also created an uptime check, an alerting policy, and a dashboard and chart. You've seen how Cloud Logging reflects changes to your VM instance.
 .*
