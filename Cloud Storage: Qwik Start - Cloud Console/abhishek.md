@@ -25,7 +25,7 @@ export REGION=
 ```
 ```
 
-curl -LOhttps://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Cloud%20Storage%3A%20Qwik%20Start%20-%20Cloud%20Console/abhishekGSP073.sh
+curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Cloud%20Storage%3A%20Qwik%20Start%20-%20Cloud%20Console/abhishekGSP073.sh
 sudo chmod +x abhishekGSP073.sh
 ./abhishekGSP073.sh
 ```
