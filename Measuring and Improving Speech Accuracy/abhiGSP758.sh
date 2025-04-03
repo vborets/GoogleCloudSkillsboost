@@ -78,7 +78,7 @@ echo -e "\n${WHITE}You can Ctrl+Click the link or copy/paste it into your browse
 
 # Footer with better formatting
 echo -e "\n${GREEN}${BOLD}╔════════════════════════════════════════════════╗"
-echo -e "║         LAB COMPLETED SUCCESSFULLY         ║"
+echo -e "║         NOW FOLLOW THE VIDEO FOR NEXT TASK      ║"
 echo -e "╚════════════════════════════════════════════════╝${NC}"
 
 echo -e "\n${WHITE}For more cloud tutorials:${NC}"
