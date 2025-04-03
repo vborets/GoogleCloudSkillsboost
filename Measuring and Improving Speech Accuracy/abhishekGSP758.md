@@ -25,10 +25,13 @@ In this hands-on lab, you will learn how to get the ** best possible quality fro
 # Download the script
 
 ```
-curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Cloud%20IAM%3A%20Qwik%20Start/abhishekGSP064.sh
+curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Measuring%20and%20Improving%20Speech%20Accuracy/abhshekGSP758.sh
 
-sudo chmod +x abhishekGSP064.sh
-./abhishekGSP064.sh
+sudo chmod +x abhshekGSP758.sh
+
+./abhshekGSP758.sh
+
+
 ```
 
 
