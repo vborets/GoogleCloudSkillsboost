@@ -25,11 +25,17 @@ In this hands-on lab, you will learn how to get the ** best possible quality fro
 # Download the script
 
 ```
-curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Measuring%20and%20Improving%20Speech%20Accuracy/abhshekGSP758.sh
 
-sudo chmod +x abhshekGSP758.sh
+curl -LO
+https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Measuring%20and%20Improving%20Speech%20Accuracy/abhishek758.sh
 
-./abhshekGSP758.sh
+sudo chmod +x abhishek758.sh
+
+
+./abhishek758.sh
+
+
+
 
 
 ```
