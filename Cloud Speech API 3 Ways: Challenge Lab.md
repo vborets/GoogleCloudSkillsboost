@@ -3,7 +3,14 @@
 
 
 
+***To start the VM session on Cloud Shell*** 
+```
+gcloud compute ssh lab-vm
+
+```
+
 ***Export the Value from lab page as showed in the video*** 
+
 
 ```bash
 export API_KEY=""
