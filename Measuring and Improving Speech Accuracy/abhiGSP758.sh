@@ -1,64 +1,89 @@
 #!/bin/bash
 
-# Define color variables
-BLUE='\033[0;94m'
-GREEN='\033[0;92m'
-YELLOW='\033[0;93m'
-CYAN='\033[0;96m'
-WHITE='\033[0;97m'
-NC='\033[0m' # No Color
-
-# Text formatting
-BOLD='\033[1m'
-UNDERLINE='\033[4m'
+# Improved color and formatting setup
+BLUE=$(tput setaf 12)
+GREEN=$(tput setaf 10)
+YELLOW=$(tput setaf 11)
+CYAN=$(tput setaf 14)
+WHITE=$(tput setaf 15)
+BOLD=$(tput bold)
+UNDERLINE=$(tput smul)
+NC=$(tput sgr0)  # Reset all attributes
 
 clear
 
-# Welcome header
-echo -e "${BLUE}${BOLD}╔════════════════════════════════════════╗"
-echo -e "║           WELCOME TO DR ABHISHEK CHANNEL           ║"
-echo -e "╚════════════════════════════════════════╝${NC}"
+# Welcome header with better centering
+header="WELCOME TO DR ABHISHEK CHANNEL"
+width=50
+padding=$(( ($width - ${#header}) / 2 ))
+
+echo -e "${BLUE}${BOLD}╔════════════════════════════════════════════════╗"
+printf "║%*s%s%*s║\n" $padding "" "$header" $padding ""
+echo -e "╚════════════════════════════════════════════════╝${NC}\n"
+
+# More robust user input with validation
+while true; do
+    read -p "${WHITE}${BOLD}Enter your GCP Zone (e.g. us-central1-a): ${NC}" ZONE
+    if [[ -z "$ZONE" ]]; then
+        echo -e "${YELLOW}Zone cannot be empty. Please try again.${NC}"
+    else
+        break
+    fi
+done
 echo
 
-# User input
-prompt="${WHITE}${BOLD}Enter your GCP Zone (e.g. us-central1-a): ${NC}"
-read -p "$prompt" ZONE
-echo
-
-# Service activation
+# Service activation with error handling
 echo -e "${YELLOW}${BOLD}⚙️  Enabling required services...${NC}"
-gcloud services enable notebooks.googleapis.com
-gcloud services enable aiplatform.googleapis.com
-sleep 15
+if ! gcloud services enable notebooks.googleapis.com; then
+    echo -e "${RED}Failed to enable notebooks API${NC}"
+    exit 1
+fi
 
-# Notebook creation
-echo -e "${CYAN}${BOLD}🖥️  Creating new AI Notebook instance...${NC}"
-echo -e "${YELLOW}⏳ This may take a few minutes. Please wait.${NC}"
-echo
+if ! gcloud services enable aiplatform.googleapis.com; then
+    echo -e "${RED}Failed to enable AI Platform API${NC}"
+    exit 1
+fi
 
-export NOTEBOOK_NAME="lab-workbench"
-export MACHINE_TYPE="e2-standard-2"
+sleep 5  # Reduced wait time
 
-gcloud notebooks instances create $NOTEBOOK_NAME \
-  --location=$ZONE \
-  --vm-image-project=deeplearning-platform-release \
-  --vm-image-family=tf-latest-cpu
+# Notebook creation with progress indicator
+echo -e "\n${CYAN}${BOLD}🖥️  Creating new AI Notebook instance...${NC}"
+echo -ne "${YELLOW}⏳ Working"
 
-# Success message
-echo -e "${GREEN}${BOLD}✅ Notebook instance created successfully!${NC}"
+NOTEBOOK_NAME="lab-workbench"
+MACHINE_TYPE="e2-standard-2"
 
-# Access information
+# Run in background with spinner
+(
+    gcloud notebooks instances create "$NOTEBOOK_NAME" \
+        --location="$ZONE" \
+        --vm-image-project=deeplearning-platform-release \
+        --vm-image-family=tf-latest-cpu > /dev/null 2>&1
+) &
+pid=$!
+
+# Spinner animation
+while kill -0 $pid 2>/dev/null; do
+    echo -n "."
+    sleep 2
+done
+
+echo -e "\n${GREEN}${BOLD}✅ Notebook instance created successfully!${NC}"
+
+# Access information with copy-paste friendly output
 PROJECT_ID=$(gcloud config get-value project)
-echo -e "${YELLOW}${BOLD}🔗 You can access your notebook at:${NC}"
+echo -e "\n${YELLOW}${BOLD}🔗 You can access your notebook at:${NC}"
 echo -e "${BLUE}${UNDERLINE}https://console.cloud.google.com/vertex-ai/workbench/user-managed?project=${PROJECT_ID}${NC}"
+echo -e "\n${WHITE}You can Ctrl+Click the link or copy/paste it into your browser.${NC}"
 
-# Footer
-echo -e "${GREEN}${BOLD}╔════════════════════════════════════════╗"
-echo -e "║         LAB COMPLETED SUCCESSFULLY        ║"
-echo -e "╚════════════════════════════════════════╝${NC}"
-echo
-echo -e "${WHITE}For more cloud tutorials, visit:${NC}"
-echo -e "${CYAN}${BOLD}Dr. Abhishek's YouTube Channel${NC}"
-echo -e "${BLUE}${UNDERLINE}https://www.youtube.com/@drabhishek.5460${NC}"
-echo
-echo -e "${WHITE}Continue with  lab instructions.${NC}"
+# Footer with better formatting
+echo -e "\n${GREEN}${BOLD}╔════════════════════════════════════════════════╗"
+echo -e "║         LAB COMPLETED SUCCESSFULLY         ║"
+echo -e "╚════════════════════════════════════════════════╝${NC}"
+
+# Channel information in a box
+echo -e "\n${WHITE}For more cloud tutorials:${NC}"
+echo -e "${CYAN}${BOLD}╭────────────────────────────────────────────╮"
+echo -e "│    Dr. Abhishek's YouTube Channel         │"
+echo -e "│    ${BLUE}${UNDERLINE}https://youtube.com/@drabhishek.5460${NC}${CYAN}    │"
+echo -e "╰────────────────────────────────────────────╯${NC}"
