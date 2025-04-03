@@ -21,7 +21,8 @@ echo -e "╚══════════════════════�
 echo
 
 # User input
-read -p "$(echo -e ${WHITE}${BOLD}Enter your GCP Zone (e.g. us-central1-a): ${NC})" ZONE
+prompt="${WHITE}${BOLD}Enter your GCP Zone (e.g. us-central1-a): ${NC}"
+read -p "$prompt" ZONE
 echo
 
 # Service activation
