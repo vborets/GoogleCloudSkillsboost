@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Improved color and formatting setup
+
 BLUE=$(tput setaf 12)
 GREEN=$(tput setaf 10)
 YELLOW=$(tput setaf 11)
 CYAN=$(tput setaf 14)
-WHITE=$(tput setaf 15)
+WHITE=$(tput setaf 7)  
 BOLD=$(tput bold)
 UNDERLINE=$(tput smul)
 NC=$(tput sgr0)  # Reset all attributes
@@ -21,7 +21,7 @@ echo -e "${BLUE}${BOLD}╔══════════════════
 printf "║%*s%s%*s║\n" $padding "" "$header" $padding ""
 echo -e "╚════════════════════════════════════════════════╝${NC}\n"
 
-# More robust user input with validation
+
 while true; do
     read -p "${WHITE}${BOLD}Enter your GCP Zone (e.g. us-central1-a): ${NC}" ZONE
     if [[ -z "$ZONE" ]]; then
@@ -53,7 +53,7 @@ echo -ne "${YELLOW}⏳ Working"
 NOTEBOOK_NAME="lab-workbench"
 MACHINE_TYPE="e2-standard-2"
 
-# Run in background with spinner
+
 (
     gcloud notebooks instances create "$NOTEBOOK_NAME" \
         --location="$ZONE" \
@@ -70,7 +70,7 @@ done
 
 echo -e "\n${GREEN}${BOLD}✅ Notebook instance created successfully!${NC}"
 
-# Access information with copy-paste friendly output
+
 PROJECT_ID=$(gcloud config get-value project)
 echo -e "\n${YELLOW}${BOLD}🔗 You can access your notebook at:${NC}"
 echo -e "${BLUE}${UNDERLINE}https://console.cloud.google.com/vertex-ai/workbench/user-managed?project=${PROJECT_ID}${NC}"
@@ -81,7 +81,6 @@ echo -e "\n${GREEN}${BOLD}╔═════════════════
 echo -e "║         LAB COMPLETED SUCCESSFULLY         ║"
 echo -e "╚════════════════════════════════════════════════╝${NC}"
 
-# Channel information in a box
 echo -e "\n${WHITE}For more cloud tutorials:${NC}"
 echo -e "${CYAN}${BOLD}╭────────────────────────────────────────────╮"
 echo -e "│    Dr. Abhishek's YouTube Channel         │"
