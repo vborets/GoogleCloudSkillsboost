@@ -28,7 +28,7 @@ gcloud compute instances create lamp-1-vm \
     --zone=$ZONE \
     --machine-type=e2-small \
     --network-interface=network-tier=PREMIUM,stack-type=IPV4_ONLY,subnet=default \
-    --metadata=enable-oslogin=true \
+    --metadata=enable-oslogin=false \
     --maintenance-policy=MIGRATE \
     --provisioning-model=STANDARD \
     --tags=http-server \
