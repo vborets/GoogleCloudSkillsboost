@@ -17,20 +17,6 @@ This challenge lab provides a hands-on scenario for deploying Google Cloud Manag
 - Basic knowledge of Kubernetes and Prometheus concepts
 - Appropriate IAM permissions in your GCP project
 
-## Lab Tasks
-1. **Environment Setup**:
-   - Create a GKE cluster with 3 nodes
-   - Configure `kubectl` to connect to your cluster
-
-2. **GMP Installation**:
-   - Create a dedicated namespace for GMP components
-   - Deploy the GMP operator and setup manifests
-   - Deploy the example application that generates metrics
-
-3. **Configuration**:
-   - Create OperatorConfig to specify which metrics to collect
-   - Store the configuration in Cloud Storage
-   - Make the configuration publicly accessible
 
 ## Running the Lab
 Execute the provided bash script to automate the lab setup:
