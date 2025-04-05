@@ -80,6 +80,15 @@ function onRemoveFromSpace(event) {
 | User support email | Select the email ID from the dropdown |
 | Developer contact information | Your user email address |
 
+# IMP
+- From the Navigation Menu, click Cloud Overview > Dashboard.
+- In the Dashboard, click Go to project settings in the Project Info section.
+- Record the Project number to use in the next step to configure your project.
+- Return to the App Script editor, and navigate to the Project Settings for the Attendance Bot project (gear icon for project settings).
+- Under Google Cloud Platform (GCP) Project, click Change project.
+
+For GCP Project number, enter the project number that you copied earlier. Then, click Set project.
+
 * Go to **Google Chat API Configuration Page** from [here](https://console.cloud.google.com/apis/api/chat.googleapis.com/hangouts-chat?)
 
 * In the **Configuration** dialog, set the fields with the following values:
