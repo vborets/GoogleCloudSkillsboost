@@ -32,7 +32,6 @@ RANDOM_BG_COLOR=${BG_COLORS[$RANDOM % ${#BG_COLORS[@]}]}
 
 #----------------------------------------------------start--------------------------------------------------#
 
-
 echo "${CYAN}${BOLD}"
 echo "  ____  ____   ___   _   _ _____ _   _ ____  _     ___  ____  "
 echo " |  _ \|  _ \ / _ \ | | | |_   _| | | |  _ \| |   / _ \|  _ \ "
@@ -42,11 +41,11 @@ echo " |____/|_| \_\\___/ |_| |_| |_| |_| |_|____/|_____\___/|_| \_\\"
 echo "${RESET}"
 echo "${MAGENTA}${BOLD}                   DR ABHISHEK CLOUD${RESET}"
 echo "${BLUE}${BOLD}--------------------------------------------------------${RESET}"
-echo "${YELLOW}${BOLD}        CLOUD AUTOMATION & SECURITY FRAMEWORK        ${RESET}"
+echo "${YELLOW}${BOLD}        WELCOME TO MY CHANNEL      ${RESET}"
 echo "${BLUE}${BOLD}--------------------------------------------------------${RESET}"
 echo
 
-echo "${RANDOM_BG_COLOR}${RANDOM_TEXT_COLOR}${BOLD}Starting Execution${RESET}"
+echo "${RANDOM_BG_COLOR}${RANDOM_TEXT_COLOR}${BOLD}Let's Start${RESET}"
 
 # Step 1: Get Compute Zone & Region
 echo "${YELLOW}${BOLD}Fetching Compute Zone & Region...${RESET}"
@@ -155,7 +154,6 @@ gcloud compute instances delete instance-1 --zone=$ZONE --quiet
 
 echo
 
-
 function show_subscription_prompt() {
     echo "${BLUE}${BOLD}"
     echo "--------------------------------------------------------"
@@ -170,9 +168,23 @@ function show_subscription_prompt() {
 # Display subscription prompt
 show_subscription_prompt
 
-# Function to display a random congratulatory message
-function random_congrats() {
-    MESSAGES=(
-        "${GREEN}Congratulations For Completing The Lab! Do hit the like button!${RESET}"
-        "${CYAN}Well done! Now subscribe to the channel!${RESET}"
-       
+echo -e "\n"  # Adding one blank line
+
+cd
+
+remove_files() {
+    # Loop through all files in the current directory
+    for file in *; do
+        # Check if the file name starts with "gsp", "arc", or "shell"
+        if [[ "$file" == gsp* || "$file" == arc* || "$file" == shell* ]]; then
+            # Check if it's a regular file (not a directory)
+            if [[ -f "$file" ]]; then
+                # Remove the file and echo the file name
+                rm "$file"
+                echo "File removed: $file"
+            fi
+        fi
+    done
+}
+
+remove_files
