@@ -32,7 +32,7 @@ RANDOM_BG_COLOR=${BG_COLORS[$RANDOM % ${#BG_COLORS[@]}]}
 
 #----------------------------------------------------start--------------------------------------------------#
 
-# Display DR ABHISHEK CLOUD header
+
 echo "${CYAN}${BOLD}"
 echo "  ____  ____   ___   _   _ _____ _   _ ____  _     ___  ____  "
 echo " |  _ \|  _ \ / _ \ | | | |_   _| | | |  _ \| |   / _ \|  _ \ "
@@ -155,7 +155,7 @@ gcloud compute instances delete instance-1 --zone=$ZONE --quiet
 
 echo
 
-# Function to display subscription prompt
+
 function show_subscription_prompt() {
     echo "${BLUE}${BOLD}"
     echo "--------------------------------------------------------"
