@@ -143,7 +143,7 @@ echo "║                                                ║"
 echo "╚════════════════════════════════════════════════╝"
 echo "${RESET}"
 
-echo "${BOLD}${CYAN}Thanks for using this script! For more tech content:${RESET}"
+echo "${BOLD}${CYAN} For more tech content:${RESET}"
 echo "${BOLD}${BLUE}Subscribe to Dr. Abhishek's YouTube channel:${RESET}"
 echo "${BOLD}${MAGENTA}https://www.youtube.com/@drabhishek.5460/videos${RESET}"
 
