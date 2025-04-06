@@ -26,25 +26,36 @@ RESET=`tput sgr0`
 
 echo "${BG_BLUE}${BOLD}╔══════════════════════════════════════════════╗${RESET}"
 echo "${BG_BLUE}${BOLD}║         WELCOME TO DR ABHISHEK CLOUD          ║${RESET}"
-echo "${BG_BLUE}${BOLD}║          TUTORIAL          ║${RESET}"
+echo "${BG_BLUE}${BOLD}║          TUTORIAL                             ║${RESET}"
 echo "${BG_BLUE}${BOLD}╚══════════════════════════════════════════════╝${RESET}"
 echo
 echo "${BOLD}Project ID: ${GREEN}$DEVSHELL_PROJECT_ID${RESET}"
-echo "${BOLD}Region: ${GREEN}${REGION}${RESET}"
+
+# Get current zone and set region
+export ZONE=$(gcloud config get-value compute/zone)
+if [ -z "$ZONE" ]; then
+  echo "${RED}${BOLD}Error: Compute zone not set. Please set it using:${RESET}"
+  echo "gcloud config set compute/zone YOUR_ZONE"
+  exit 1
+fi
+
+export REGION="${ZONE%-*}"
+echo "${BOLD}Zone: ${GREEN}$ZONE${RESET}"
+echo "${BOLD}Region: ${GREEN}$REGION${RESET}"
 echo
 
 echo "${BG_MAGENTA}${BOLD}Starting Execution...${RESET}"
 echo
-
-# Set region from zone if not already set
-export REGION="${ZONE%-*}"
 
 # Create Dataplex Lake
 echo "${CYAN}${BOLD}Creating Dataplex Lake...${RESET}"
 gcloud alpha dataplex lakes create customer-lake \
   --display-name="Customer-Lake" \
   --location=$REGION \
-  --labels="key_1=$KEY_1,value_1=$VALUE_1"
+  --labels="key_1=$KEY_1,value_1=$VALUE_1" || {
+  echo "${RED}${BOLD}Error creating Dataplex lake${RESET}"
+  exit 1
+}
 
 # Create Public Zone
 echo "${CYAN}${BOLD}Creating Public Zone...${RESET}"
@@ -53,7 +64,10 @@ gcloud dataplex zones create public-zone \
   --location=$REGION \
   --type=RAW \
   --resource-location-type=SINGLE_REGION \
-  --display-name="Public-Zone"
+  --display-name="Public-Zone" || {
+  echo "${RED}${BOLD}Error creating public zone${RESET}"
+  exit 1
+}
 
 # Create Storage Bucket Asset
 echo "${CYAN}${BOLD}Creating Customer Raw Data Asset...${RESET}"
@@ -62,7 +76,10 @@ gcloud dataplex assets create customer-raw-data --location=$REGION \
   --resource-type=STORAGE_BUCKET \
   --resource-name=projects/$DEVSHELL_PROJECT_ID/buckets/$DEVSHELL_PROJECT_ID-customer-bucket \
   --discovery-enabled \
-  --display-name="Customer Raw Data"
+  --display-name="Customer Raw Data" || {
+  echo "${RED}${BOLD}Error creating raw data asset${RESET}"
+  exit 1
+}
 
 # Create BigQuery Dataset Asset
 echo "${CYAN}${BOLD}Creating Customer Reference Data Asset...${RESET}"
@@ -70,9 +87,12 @@ gcloud dataplex assets create customer-reference-data --location=$REGION \
   --lake=customer-lake --zone=public-zone \
   --resource-type=BIGQUERY_DATASET \
   --resource-name=projects/$DEVSHELL_PROJECT_ID/datasets/customer_reference_data \
-  --display-name="Customer Reference Data"
+  --display-name="Customer Reference Data" || {
+  echo "${RED}${BOLD}Error creating reference data asset${RESET}"
+  exit 1
+}
 
-
+# Completion Message
 echo
 echo "${BG_GREEN}${BOLD}╔══════════════════════════════════════════════╗${RESET}"
 echo "${BG_GREEN}${BOLD}║        DO LIKE THE VIDEO AND SUBSCRIBE TO CHANNEL!        ║${RESET}"
