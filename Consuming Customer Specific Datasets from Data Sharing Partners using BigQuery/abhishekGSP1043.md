@@ -22,7 +22,7 @@ sudo chmod +x ABHISHEK2.SH
 ### Customer (Data Twin) Project Console
 
 ```
-curl -https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Consuming%20Customer%20Specific%20Datasets%20from%20Data%20Sharing%20Partners%20using%20BigQuery/abhishek3.sh
+curl https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Consuming%20Customer%20Specific%20Datasets%20from%20Data%20Sharing%20Partners%20using%20BigQuery/abhishek3.sh
 sudo chmod +x abhishek3.sh
 ./abhishek3.sh
 ```
