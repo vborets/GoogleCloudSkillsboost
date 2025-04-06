@@ -125,7 +125,6 @@ echo "║                                                ║"
 echo "╚════════════════════════════════════════════════╝"
 echo "${RESET}"
 
-echo "${BOLD}${CYAN}Thanks for using this BigQuery authorized views setup script!${RESET}"
 echo "${BOLD}${BLUE}For more Google Cloud content, subscribe to:${RESET}"
 echo "${BOLD}${MAGENTA}https://www.youtube.com/@drabhishek.5460/videos${RESET}"
 
