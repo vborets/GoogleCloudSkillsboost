@@ -1,6 +1,6 @@
 ## Cloud Spanner - Database Fundamentals
 
-### n this lab, you learn how to perform the following tasks:
+### In this lab, you learn how to perform the following tasks:
 
 Create an instance.
 Create a database.
