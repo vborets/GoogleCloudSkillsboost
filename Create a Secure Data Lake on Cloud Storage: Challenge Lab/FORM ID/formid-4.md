@@ -8,8 +8,10 @@
 
 ### copy the command from here 
 
+```
+export ZONE=
+```
 `````
-
 curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Create%20a%20Secure%20Data%20Lake%20on%20Cloud%20Storage%3A%20Challenge%20Lab/ABHIFI4.SH
 sudo chmod +x ABHIFI4.SH
 ./ABHIFI4.SH
