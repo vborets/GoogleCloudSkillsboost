@@ -1,15 +1,15 @@
 #  Secure Data Lake on Cloud Storage - Challenge Lab | [ARC119](https://www.cloudskillsboost.google/catalog_lab/6445)
 
 A hands-on lab to practice working with **Google Cloud Dataplex**, **Cloud Storage**, and **BigQuery** by organizing and securing data in a unified data lake architecture.
-
+#### Make sure to check task no 1 and 4.
 ---
 
 ## 📺 Solution Videos
 
-- 🔗 **Form 1:** [Watch Here]()
-- 🔗 **Form 2:** [Watch Here]()
-- 🔗 **Form 3:** [Watch Here]()
-- 🔗 **Form 4:** [Watch Here]()
+- 🔗 **Form 1:** [Watch Here](https://youtu.be/pm-6l7QAaQg)
+- 🔗 **Form 2:** [Watch Here](https://youtu.be/UoGPnQs1W7w)
+- 🔗 **Form 3:** [Watch Here](https://youtu.be/uWzQ37UrJG0)
+- 🔗 **Form 4:** [Watch Here](https://youtu.be/smBxcz3ROjc)
 
 ---
 
