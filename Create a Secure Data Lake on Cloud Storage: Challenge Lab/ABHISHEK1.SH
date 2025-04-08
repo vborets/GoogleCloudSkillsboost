@@ -33,7 +33,7 @@ echo "╔═══════════════════════�
 echo "║                                                            ║"
 echo "║   🌊 Welcome to Dr. Abhishek's Cloud Dataplex Tutorial     ║"
 echo "║                                                            ║"
-echo "║
+echo "║   Let's start the lab   ║"
 echo "║   Subscribe for more tutorials:                            ║"
 echo "║   ${BLINK}https://youtube.com/@drabhishek.5460${RESET}${BG_BLUE}${WHITE}${BOLD}             ║"
 echo "║                                                            ║"
@@ -97,14 +97,14 @@ gcloud data-catalog tag-templates create customer_data_tag_template \
   --location=$REGION \
   --display-name="Customer Data Tag Template" \
   --field=id=data_owner,display-name="Data Owner",type=string,required=TRUE \
-  --field=id=pii_data,display-name="PII Data",type='enum(Yes|No)',required=TRUE
+  --field=id=pii_data,display-name="PII Data",type="enum(Yes|No)",required=TRUE
 
-# Completion message
+
 echo ""
 echo "${BG_GREEN}${BLACK}${BOLD}"
 echo "╔════════════════════════════════════════════════════════════╗"
 echo "║                                                            ║"
-echo "║   🎉 ${WHITE}DATAPLEX LAB COMPLETED SUCCESSFULLY!${BLACK}            ║"
+echo "║   🎉 ${WHITE} LAB COMPLETED SUCCESSFULLY!${BLACK}            ║"
 echo "║                                                            ║"
 echo "║   ${WHITE}Created Resources:${BLACK}                                ║"
 echo "║   - Storage Bucket: ${DEVSHELL_PROJECT_ID}-bucket          ║"
