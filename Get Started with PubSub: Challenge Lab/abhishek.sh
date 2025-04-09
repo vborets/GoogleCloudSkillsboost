@@ -98,7 +98,7 @@ EOF_END
     deploy_function() {
         gcloud functions deploy gcf-pubsub \
             --trigger-topic=gcf-topic \
-            --runtime=nodejs20 \
+            --runtime=nodejs22 \
             --no-gen2 \
             --entry-point=helloPubSub \
             --source=. \
