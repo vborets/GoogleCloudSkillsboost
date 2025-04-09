@@ -12,6 +12,8 @@
 - **DM for credit or removal request (no copyright intended) ©All rights and credits for the original content belong to Google Cloud [Google Cloud Skill Boost website](https://www.cloudskillsboost.google/)** 🙏
 
 
+## Run the following in cloudshell
+
 ### form 1:
 ---
 * **Task 1. Set up Cloud Pub/Sub.**
@@ -19,7 +21,9 @@
 * **Task 3. Verify the results in Cloud Pub/Sub.**
 
 ````
-
+curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Get%20Started%20with%20PubSub%3A%20Challenge%20Lab/abhishek.sh
+sudo chmod +x abhishek.sh
+./abhishek.sh
 ````
 ### form 2:
 ---
@@ -30,7 +34,9 @@
 
 
 ````
-
+curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Get%20Started%20with%20PubSub%3A%20Challenge%20Lab/abhishek.sh
+sudo chmod +x abhishek.sh
+./abhishek.sh
 ````
 ###  form 3:
 ---
@@ -41,7 +47,9 @@
 
 
 ````
-
+curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Get%20Started%20with%20PubSub%3A%20Challenge%20Lab/abhishek.sh
+sudo chmod +x abhishek.sh
+./abhishek.sh
 ````
 
 ### Congratulations !!!!
