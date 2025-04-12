@@ -20,7 +20,7 @@ clear
 
 echo
 echo "${HEADER_COLOR}${BOLD_TEXT}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${RESET_FORMAT}"
-echo "${TITLE_COLOR}${BOLD_TEXT}       🎓 DR. ABHISHEK'S CLOUD TUTORIALS      ${RESET_FORMAT}"
+echo "${TITLE_COLOR}${BOLD_TEXT}       🎓 DR. ABHISHEK'S TEXT-TO-SPEECH LAB       ${RESET_FORMAT}"
 echo "${HEADER_COLOR}${BOLD_TEXT}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${RESET_FORMAT}"
 echo
 echo "${TEXT_COLOR}This lab demonstrates Google Cloud Text-to-Speech API setup${RESET_FORMAT}"
