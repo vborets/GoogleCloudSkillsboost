@@ -11,9 +11,9 @@
 ### Run the following Commands in CloudShell
 
 ```
-curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Build%20an%20AI%20Image%20Recognition%20app%20using%20Gemini%20on%20Vertex%20AI/abhishek.sh
-sudo chmod +x abhishek.sh
-./abhishek.sh
+curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Build%20an%20AI%20Image%20Recognition%20app%20using%20Gemini%20on%20Vertex%20AI/abhishek1.sh
+sudo chmod +x abhishek1.sh
+./abhishek1.sh
 ```
 ### Congratulations !!!!
 
