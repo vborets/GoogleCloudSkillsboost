@@ -1,67 +1,45 @@
 #!/bin/bash
 
-# Enhanced Color Definitions
-BLACK=$'\033[0;90m'
-RED=$'\033[0;91m'
-GREEN=$'\033[0;92m'
-YELLOW=$'\033[0;93m'
-BLUE=$'\033[0;94m'
-MAGENTA=$'\033[0;95m'
-CYAN=$'\033[0;96m'
-WHITE=$'\033[0;97m'
-BOLD=$'\033[1m'
-RESET=$'\033[0m'
-UNDERLINE=$'\033[4m'
+# Define color variables (updated palette)
+BLACK_TEXT=$'\033[0;90m'
+RED_TEXT=$'\033[0;91m'
+GREEN_TEXT=$'\033[0;92m'
+YELLOW_TEXT=$'\033[0;93m'
+BLUE_TEXT=$'\033[0;94m'
+MAGENTA_TEXT=$'\033[0;95m'
+CYAN_TEXT=$'\033[0;96m'
+WHITE_TEXT=$'\033[0;97m'
 
-# Background Colors
-BG_BLUE=$'\033[44m'
-BG_GREEN=$'\033[42m'
+NO_COLOR=$'\033[0m'
+RESET_FORMAT=$'\033[0m'
+BOLD_TEXT=$'\033[1m'
+UNDERLINE_TEXT=$'\033[4m'
 
 clear
 
-# Enhanced Welcome Banner
-echo "${BLUE}${BOLD}╔════════════════════════════════════════════════════════╗${RESET}"
-echo "${BLUE}${BOLD}║                                                        ║${RESET}"
-echo "${BLUE}${BOLD}║   ${WHITE}${BG_BLUE}🚀WELCOME TO DR ABHISHEK CLOUD TUTORIALS ${RESET}${BLUE}${BOLD}               ║${RESET}"
-echo "${BLUE}${BOLD}║                                                        ║${RESET}"
-echo "${BLUE}${BOLD}╚════════════════════════════════════════════════════════╝${RESET}"
+# Welcome message
+echo "${MAGENTA_TEXT}${BOLD_TEXT}=======================================${RESET_FORMAT}"
+echo "${MAGENTA_TEXT}${BOLD_TEXT}         INITIATING EXECUTION...  ${RESET_FORMAT}"
+echo "${MAGENTA_TEXT}${BOLD_TEXT}=======================================${RESET_FORMAT}"
 echo
 
 LAB_MODEL="gemini-2.0-flash-001"
 
-# Get region input with validation
-while true; do
-    echo "${YELLOW}${BOLD}🌍 Enter Google Cloud Region (e.g., us-central1):${RESET}"
-    read -r REGION
-    if [ -n "$REGION" ]; then
-        export REGION
-        echo "${GREEN}✓ ${WHITE}Region set to: ${CYAN}${BOLD}$REGION${RESET}"
-        break
-    else
-        echo "${RED}✗ Region cannot be empty. Please try again.${RESET}"
-    fi
-done
+echo "${CYAN_TEXT}${BOLD_TEXT}Enter REGION:${RESET_FORMAT}"
+read -r REGION
 echo
+echo "${GREEN_TEXT}${BOLD_TEXT}Region set to:${RESET_FORMAT} ${YELLOW_TEXT}$REGION${RESET_FORMAT}"
 
-# Get Project ID
-echo "${YELLOW}${BOLD}🔍 Retrieving Project ID...${RESET}"
-ID="$(gcloud projects list --format='value(PROJECT_ID)' | head -1)"
-if [ -z "$ID" ]; then
-    echo "${RED}${BOLD}Error: Could not retrieve Project ID. Please ensure:"
-    echo "1. You're authenticated with gcloud (run 'gcloud auth login')"
-    echo "2. You have at least one project created${RESET}"
-    exit 1
-fi
-echo "${GREEN}✓ ${WHITE}Project ID: ${CYAN}${BOLD}$ID${RESET}"
+export REGION
+ID="$(gcloud projects list --format='value(PROJECT_ID)')"
 echo
-echo "${GREEN}✓ ${WHITE}Using Model: ${MAGENTA}${BOLD}$LAB_MODEL${RESET}"
+echo "${GREEN_TEXT}${BOLD_TEXT}Project ID:${RESET_FORMAT} ${YELLOW_TEXT}$ID${RESET_FORMAT}"
 echo
+echo "${GREEN_TEXT}${BOLD_TEXT}Using Model:${RESET_FORMAT} ${YELLOW_TEXT}${LAB_MODEL}${RESET_FORMAT}"
+echo
+echo "${CYAN_TEXT}${BOLD_TEXT}Generating SendChatwithoutStream.py...${RESET_FORMAT}"
 
-# Create non-streaming chat script
-SCRIPT1_PATH="/home/student/SendChatwithoutStream.py"
-echo "${MAGENTA}${BOLD}📝 Creating non-streaming chat script...${RESET}"
-
-cat > "$SCRIPT1_PATH" <<EOF
+cat > SendChatwithoutStream.py <<EOF
 from google import genai
 from google.genai.types import HttpOptions, ModelContent, Part, UserContent
 
@@ -74,12 +52,12 @@ gcp_logging_client.setup_logging()
 
 client = genai.Client(
     vertexai=True,
-    project='$ID',
-    location='$REGION',
+    project='${ID}',
+    location='${REGION}',
     http_options=HttpOptions(api_version="v1")
 )
 chat = client.chats.create(
-    model="$LAB_MODEL",
+    model="${LAB_MODEL}",
     history=[
         UserContent(parts=[Part(text="Hello")]),
         ModelContent(
@@ -88,35 +66,22 @@ chat = client.chats.create(
     ],
 )
 response = chat.send_message("What are all the colors in a rainbow?")
-logging.info(f'Received response 1: {response.text}')
-print("${BLUE}${BOLD}First response:${RESET}")
+logging.info(f'Received response 1: {response.text}') # Added logging
 print(response.text)
 
 response = chat.send_message("Why does it appear when it rains?")
-logging.info(f'Received response 2: {response.text}')
-print("\n${BLUE}${BOLD}Second response:${RESET}")
+logging.info(f'Received response 2: {response.text}') # Added logging
 print(response.text)
 EOF
 
-echo "${GREEN}✓ Script created: ${CYAN}$SCRIPT1_PATH${RESET}"
-echo
-echo "${YELLOW}${BOLD}💬 Executing non-streaming chat...${RESET}"
-echo "${BLUE}────────────────────────────────────────────────────${RESET}"
-if sudo -u student /usr/bin/python3 "$SCRIPT1_PATH"; then
-    echo "${BLUE}────────────────────────────────────────────────────${RESET}"
-    echo "${GREEN}✓ Non-streaming chat completed successfully${RESET}"
-else
-    echo "${BLUE}────────────────────────────────────────────────────${RESET}"
-    echo "${RED}✗ Non-streaming chat failed${RESET}"
-fi
-echo
-sleep 2
+echo "${GREEN_TEXT}${BOLD_TEXT}Executing SendChatwithoutStream.py...${RESET_FORMAT}"
+/usr/bin/python3 /home/student/SendChatwithoutStream.py
+sleep 5
 
-# Create streaming chat script
-SCRIPT2_PATH="/home/student/SendChatwithStream.py"
-echo "${MAGENTA}${BOLD}📝 Creating streaming chat script...${RESET}"
+echo
+echo "${CYAN_TEXT}${BOLD_TEXT}Generating SendChatwithStream.py...${RESET_FORMAT}"
 
-cat > "$SCRIPT2_PATH" <<EOF
+cat > SendChatwithStream.py <<EOF
 from google import genai
 from google.genai.types import HttpOptions
 
@@ -129,46 +94,32 @@ gcp_logging_client.setup_logging()
 
 client = genai.Client(
     vertexai=True,
-    project='$ID',
-    location='$REGION',
+    project='${ID}',
+    location='${REGION}',
     http_options=HttpOptions(api_version="v1")
 )
-chat = client.chats.create(model="$LAB_MODEL")
+chat = client.chats.create(model="${LAB_MODEL}")
 response_text = ""
 
-logging.info("Sending streaming prompt...")
-print("${BLUE}${BOLD}Streaming response:${RESET}")
+logging.info("Sending streaming prompt...") # Added logging
+print("Streaming response:") # Added for clarity
 for chunk in chat.send_message_stream("What are all the colors in a rainbow?"):
     print(chunk.text, end="")
     response_text += chunk.text
-print()
-logging.info(f"Received full streaming response: {response_text}")
+print() # Add a newline after streaming output
+logging.info(f"Received full streaming response: {response_text}") # Added logging
+
 EOF
 
-echo "${GREEN}✓ Script created: ${CYAN}$SCRIPT2_PATH${RESET}"
-echo
-echo "${YELLOW}${BOLD}💬 Executing streaming chat...${RESET}"
-echo "${BLUE}────────────────────────────────────────────────────${RESET}"
-if sudo -u student /usr/bin/python3 "$SCRIPT2_PATH"; then
-    echo "${BLUE}────────────────────────────────────────────────────${RESET}"
-    echo "${GREEN}✓ Streaming chat completed successfully${RESET}"
-else
-    echo "${BLUE}────────────────────────────────────────────────────${RESET}"
-    echo "${RED}✗ Streaming chat failed${RESET}"
-fi
-echo
-sleep 2
+echo "${GREEN_TEXT}${BOLD_TEXT}Executing SendChatwithStream.py...${RESET_FORMAT}"
+/usr/bin/python3 /home/student/SendChatwithStream.py
+sleep 5
 
-# Completion Banner
-echo "${GREEN}${BOLD}╔════════════════════════════════════════════════════════╗${RESET}"
-echo "${GREEN}${BOLD}║                                                        ║${RESET}"
-echo "${GREEN}${BOLD}║   ${WHITE}${BG_GREEN}✅ LAB COMPLETED SUCCESSFULLY ✅${RESET}${GREEN}${BOLD}   ║${RESET}"
-echo "${GREEN}${BOLD}║                                                        ║${RESET}"
-echo "${GREEN}${BOLD}╚════════════════════════════════════════════════════════╝${RESET}"
+# Completion Message
 echo
-echo "${WHITE}${BOLD}For more cloud AI tutorials and guides:${RESET}"
-echo "${YELLOW}👉 Subscribe to Dr. Abhishek Cloud Tutorials:${RESET}"
-echo "${BLUE}${UNDERLINE}https://www.youtube.com/@drabhishek.5460/videos${RESET}"
-echo
-echo "${MAGENTA}Thank you do like share & subscribe!${RESET}"
+echo "${GREEN_TEXT}${BOLD_TEXT}=======================================================${RESET_FORMAT}"
+echo "${GREEN_TEXT}${BOLD_TEXT}              LAB COMPLETED SUCCESSFULLY!              ${RESET_FORMAT}"
+echo "${GREEN_TEXT}${BOLD_TEXT}=======================================================${RESET_FORMAT}"
+echo ""
+echo -e "${RED_TEXT}${BOLD_TEXT}Subscribe to Dr Abhishek's YouTube Channel:${RESET_FORMAT} ${BLUE_TEXT}${BOLD_TEXT}https://www.youtube.com/@drabhishek.5460/videos${RESET_FORMAT}"
 echo
