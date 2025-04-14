@@ -18,11 +18,11 @@ clear # Clear the terminal screen
 
 echo
 echo "${BLUE_TEXT}${BOLD_TEXT}=======================================${RESET_FORMAT}"
-echo "${BLUE_TEXT}${BOLD_TEXT}       WELCOME TO DR ABHISHEK CLOUD TUTORIAL       ${RESET_FORMAT}"
+echo "${BLUE_TEXT}${BOLD_TEXT}     WELCOME TO DR ABHISHEK CLOUD TUTORIAL       ${RESET_FORMAT}"
 echo "${BLUE_TEXT}${BOLD_TEXT}=======================================${RESET_FORMAT}"
 echo
 echo "${MAGENTA_TEXT}${BOLD_TEXT}Cloud Tutorial by Dr. Abhishek${RESET_FORMAT}"
-echo "${CYAN_TEXT}For more GCP content, visit: ${UNDERLINE_TEXT}https://www.youtube.com/@drabhishek.5460${RESET_FORMAT}"
+echo "${CYAN_TEXT}For more GCP tutorials, visit: ${UNDERLINE_TEXT}https://www.youtube.com/@drabhishek.5460${RESET_FORMAT}"
 echo
 
 # Instruction for setting up the zone
@@ -100,10 +100,10 @@ echo "${YELLOW_TEXT}${BOLD_TEXT}Step 17:${RESET_FORMAT} ${CYAN_TEXT}Querying the
 # Final message
 echo
 echo "${GREEN_TEXT}${BOLD_TEXT}=======================================${RESET_FORMAT}"
-echo "${GREEN_TEXT}${BOLD_TEXT}      LAB  COMPLETED SUCCESSFULLY! ${RESET_FORMAT}"
+echo "${GREEN_TEXT}${BOLD_TEXT}      LAB COMPLETED SUCCESSFULLY! ${RESET_FORMAT}"
 echo "${GREEN_TEXT}${BOLD_TEXT}=======================================${RESET_FORMAT}"
 echo
-echo "${RED_TEXT}${BOLD_TEXT}Do like share & subscribe  to Dr. Abhishek for this tutorial!${RESET_FORMAT}"
+echo "${RED_TEXT}${BOLD_TEXT}DO like share & subscribe Dr. Abhishek for this tutorial!${RESET_FORMAT}"
 echo "${YELLOW_TEXT}${BOLD_TEXT}For more Google Cloud tutorials, subscribe to:${RESET_FORMAT}"
 echo "${BLUE_TEXT}${UNDERLINE_TEXT}https://www.youtube.com/@drabhishek.5460${RESET_FORMAT}"
 echo
