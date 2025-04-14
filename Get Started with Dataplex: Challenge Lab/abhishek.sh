@@ -18,7 +18,7 @@ UNDERLINE_TEXT=$'\033[4m'
 # Displaying start message
 echo
 echo "${CYAN_TEXT}${BOLD_TEXT}╔════════════════════════════════════════════════════════╗${RESET_FORMAT}"
-echo "${CYAN_TEXT}${BOLD_TEXT}       DATAPLEX CHALLENGE LAB TUTORIAL BY DR. ABHISHEK            ${RESET_FORMAT}"
+echo "${CYAN_TEXT}${BOLD_TEXT}       DATAPLEX SETUP TUTORIAL BY DR. ABHISHEK            ${RESET_FORMAT}"
 echo "${CYAN_TEXT}${BOLD_TEXT}╚════════════════════════════════════════════════════════╝${RESET_FORMAT}"
 echo
 echo "${MAGENTA_TEXT}${BOLD_TEXT}For more GCP tutorials, visit: ${UNDERLINE_TEXT}https://www.youtube.com/@drabhishek.5460${RESET_FORMAT}"
@@ -31,12 +31,8 @@ echo
 echo "${YELLOW_TEXT} ${BOLD_TEXT} You entered: ${LOCATION} ${RESET_FORMAT}"
 echo
 
-echo "${GREEN_TEXT}${BOLD_TEXT} ========================== Verify Project ID ========================== ${RESET_FORMAT}"
-echo "${YELLOW_TEXT}${BOLD_TEXT}   Ensure that the DEVSHELL_PROJECT_ID environment variable   ${RESET_FORMAT}"
-echo "${YELLOW_TEXT}${BOLD_TEXT}        is correctly set to your project ID.                  ${RESET_FORMAT}"
-echo
-
 export ID=$DEVSHELL_PROJECT_ID
+export REGION=${LOCATION}
 
 echo
 echo "${GREEN_TEXT}${BOLD_TEXT} ========================== Enable Services ========================== ${RESET_FORMAT}"
@@ -85,7 +81,41 @@ gcloud dataplex assets create raw-event-files \
 --resource-type=STORAGE_BUCKET \
 --resource-name=projects/my-project/buckets/${ID}
 
-PROJECT_ID=$(gcloud config get-value project)  # Fetch the current project ID
+echo
+echo "${GREEN_TEXT}${BOLD_TEXT} ========================== Create Tag Template ========================== ${RESET_FORMAT}"
+echo "${YELLOW_TEXT}${BOLD_TEXT} Creating 'Protected Raw Data Template' in region ${REGION} ${RESET_FORMAT}"
+echo
+
+gcloud data-catalog tag-templates create "Protected Raw Data Template" \
+    --location=$REGION \
+    --display-name="Protected Raw Data Template" \
+    --field=id=protected_raw_data_flag,display-name="Protected Raw Data Flag",type=enum,enum-values="Y,N",required=TRUE
+
+echo
+echo "${GREEN_TEXT}${BOLD_TEXT} ========================== Tag the Zone ========================== ${RESET_FORMAT}"
+echo "${YELLOW_TEXT}${BOLD_TEXT} Tagging 'raw-event-data' zone as protected raw data ${RESET_FORMAT}"
+echo
+
+# Look up the zone entry
+ZONE_ENTRY_NAME=$(gcloud data-catalog entries lookup \
+    "//dataplex.googleapis.com/projects/$ID/locations/$LOCATION/lakes/customer-engagements/zones/raw-event-data" \
+    --format="value(name)")
+
+# Create tag.json file
+cat > tag.json << EOF
+{
+  "protected_raw_data_flag": "Y"
+}
+EOF
+
+# Apply the tag
+gcloud data-catalog tags create \
+    --entry=$ZONE_ENTRY_NAME \
+    --tag-template="Protected Raw Data Template" \
+    --tag-template-location=$REGION \
+    --tag-file=tag.json
+
+PROJECT_ID=$(gcloud config get-value project)
 URL="https://console.cloud.google.com/dataplex/templates/create?project=${PROJECT_ID}"
 
 echo
@@ -95,7 +125,7 @@ echo "${WHITE_TEXT}${BOLD_TEXT} $URL ${RESET_FORMAT}"
 echo
 
 echo "${GREEN_TEXT}${BOLD_TEXT}╔════════════════════════════════════════════════════════╗${RESET_FORMAT}"
-echo "${GREEN_TEXT}${BOLD_TEXT}          LAB COMPLETED SUCCESSFULLY!          ${RESET_FORMAT}"
+echo "${GREEN_TEXT}${BOLD_TEXT}          DATAPLEX LAB COMPLETED SUCCESSFULLY!          ${RESET_FORMAT}"
 echo "${GREEN_TEXT}${BOLD_TEXT}╚════════════════════════════════════════════════════════╝${RESET_FORMAT}"
 echo
 echo "${RED_TEXT}${BOLD_TEXT}Special thanks to Dr. Abhishek for this tutorial!${RESET_FORMAT}"
