@@ -16,6 +16,22 @@ curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost
 sudo chmod +x abhishek.sh
 ./abhishek.sh
 ```
+* Go to `Create log-based metric` from [here](https://console.cloud.google.com/logs/metrics/edit?)
+
+1. For Log-based metric name: enter `drabhi`
+
+2. Paste The Following in `Build filter` & Replace PROJECT_ID
+```
+resource.type="gce_instance"
+logName="projects/PROJECT_ID/logs/apache-access"
+textPayload:"200"
+```
+
+3. Paste The Following in `Regular Expression` field:
+```
+execution took (\d+)
+
+```
 ### Congratulations !!!!
 
 <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 20px;">
