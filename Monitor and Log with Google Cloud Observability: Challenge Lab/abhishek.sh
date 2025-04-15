@@ -25,49 +25,71 @@ UNDERLINE=$'\033[4m'
 
 # Header Section
 echo "${BG_MAGENTA}${BOLD}╔════════════════════════════════════════════════════════╗${RESET}"
-echo "${BG_MAGENTA}${BOLD}        WELCOME TO DR ABHISHEK CLOUD TUTORIALS            ${RESET}"
+echo "${BG_MAGENTA}${BOLD}        WELCOME TO DR ABHISHEK CLOUD              ${RESET}"
 echo "${BG_MAGENTA}${BOLD}╚════════════════════════════════════════════════════════╝${RESET}"
 echo
 echo "${CYAN}${BOLD}⚡ Initializing Video Queue Monitoring Configuration...${RESET}"
 echo
 
-# Step 1: Enable Monitoring API
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬ API ENABLEMENT ▬▬▬▬▬▬▬▬${RESET}"
+# User Input Section
+echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬ USER INPUT ▬▬▬▬▬▬▬▬${RESET}"
+read -p "${YELLOW}Enter custom_metric: ${RESET}" custom_metric
+read -p "${YELLOW}Enter VALUE: ${RESET}" VALUE
+echo
+
+# Authentication Check
+echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬ AUTHENTICATION ▬▬▬▬▬▬▬▬${RESET}"
+echo "${YELLOW}Checking active GCP account...${RESET}"
+gcloud auth list
+echo
+
+# Project Configuration
+echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬ PROJECT SETUP ▬▬▬▬▬▬▬▬${RESET}"
+export PROJECT_ID=$(gcloud config get-value project)
+export PROJECT_ID=$DEVSHELL_PROJECT_ID
+echo "${CYAN}Project ID: ${WHITE}${BOLD}$PROJECT_ID${RESET}"
+echo
+
+# Service Enablement
+echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬ SERVICE ENABLEMENT ▬▬▬▬▬▬▬▬${RESET}"
 echo "${YELLOW}Enabling Monitoring API...${RESET}"
-gcloud services enable monitoring.googleapis.com
+gcloud services enable monitoring.googleapis.com --project="$DEVSHELL_PROJECT_ID"
 echo "${GREEN}✅ Monitoring API enabled successfully!${RESET}"
 echo
 
-# Step 2: Instance Configuration
-echo "${GREEN}${BOLD}▬▬▬▬▬ INSTANCE CONFIGURATION ▬▬▬▬▬${RESET}"
-echo "${YELLOW}Retrieving instance details...${RESET}"
-export ZONE=$(gcloud compute instances list video-queue-monitor --format 'csv[no-heading](zone)')
-export REGION="${ZONE%-*}"
-export INSTANCE_ID=$(gcloud compute instances describe video-queue-monitor --project="$DEVSHELL_PROJECT_ID" --zone="$ZONE" --format="get(id)")
-echo "${CYAN}Instance Zone: ${WHITE}${BOLD}$ZONE${RESET}"
+# Zone and Region Configuration
+echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬ REGION SETUP ▬▬▬▬▬▬▬▬${RESET}"
+ZONE=$(gcloud compute instances list --project="$DEVSHELL_PROJECT_ID" --format="get(zone)" --limit=1)
+gcloud config set compute/zone $ZONE
+export REGION=${ZONE%-*}
+gcloud config set compute/region $REGION
+echo "${CYAN}Zone: ${WHITE}${BOLD}$ZONE${RESET}"
 echo "${CYAN}Region: ${WHITE}${BOLD}$REGION${RESET}"
-echo "${CYAN}Instance ID: ${WHITE}${BOLD}$INSTANCE_ID${RESET}"
 echo
 
-# Step 3: Instance Management
-echo "${GREEN}${BOLD}▬▬▬▬▬ INSTANCE MANAGEMENT ▬▬▬▬▬${RESET}"
+# Instance Configuration
+echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬ INSTANCE SETUP ▬▬▬▬▬▬▬▬${RESET}"
+echo "${YELLOW}Retrieving instance details...${RESET}"
+INSTANCE_ID=$(gcloud compute instances describe video-queue-monitor --project="$DEVSHELL_PROJECT_ID" --zone="$ZONE" --format="get(id)")
 echo "${YELLOW}Stopping video-queue-monitor instance...${RESET}"
-gcloud compute instances stop video-queue-monitor --zone $ZONE
+gcloud compute instances stop video-queue-monitor --project="$DEVSHELL_PROJECT_ID" --zone="$ZONE"
 echo "${GREEN}✅ Instance stopped successfully!${RESET}"
 echo
 
-# Step 4: Startup Script Creation
-echo "${GREEN}${BOLD}▬▬▬▬▬ STARTUP SCRIPT SETUP ▬▬▬▬▬${RESET}"
+# Startup Script Creation
+echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬ STARTUP SCRIPT ▬▬▬▬▬▬▬▬${RESET}"
 echo "${YELLOW}Creating startup script...${RESET}"
-cat > startup-script.sh <<'EOF_START'
+cat > startup-script.sh <<EOF_CP
 #!/bin/bash
 
-# Environment Setup
-export PROJECT_ID=$(gcloud config list --format 'value(core.project)')
-export ZONE=$(gcloud compute project-info describe --format="value(commonInstanceMetadata.items[google-compute-default-zone])")
-export REGION=$(gcloud compute project-info describe --format="value(commonInstanceMetadata.items[google-compute-default-region])")
+ZONE="$ZONE"
+REGION="${ZONE%-*}"
+PROJECT_ID="$DEVSHELL_PROJECT_ID"
 
-# Install Dependencies
+echo "ZONE: $ZONE"
+echo "REGION: $REGION"
+echo "PROJECT_ID: $PROJECT_ID"
+
 sudo apt update && sudo apt -y
 sudo apt-get install wget -y
 sudo apt-get -y install git
@@ -76,97 +98,85 @@ sudo wget https://go.dev/dl/go1.22.8.linux-amd64.tar.gz
 sudo tar -C /usr/local -xzf go1.22.8.linux-amd64.tar.gz
 export PATH=$PATH:/usr/local/go/bin
 
-# Install Ops Agent
 curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh
 sudo bash add-google-cloud-ops-agent-repo.sh --also-install
 sudo service google-cloud-ops-agent start
 
-# Setup Go Environment
 mkdir -p /work/go/cache
 export GOPATH=/work/go
 export GOCACHE=/work/go/cache
 
-# Install Application Code
-mkdir -p /work/go/video
+cd /work/go
+mkdir -p video
 gsutil cp gs://spls/gsp338/video_queue/main.go /work/go/video/main.go
 
-# Get Dependencies
 go get go.opencensus.io
 go get contrib.go.opencensus.io/exporter/stackdriver
 
-# Configure Environment
-export MY_PROJECT_ID=$DEVSHELL_PROJECT_ID
-export MY_GCE_INSTANCE_ID=$INSTANCE_ID
-export MY_GCE_INSTANCE_ZONE=$ZONE
+# Set project metadata
+export MY_PROJECT_ID="$DEVSHELL_PROJECT_ID"
+export MY_GCE_INSTANCE_ID="$INSTANCE_ID"
+export MY_GCE_INSTANCE_ZONE="$ZONE"
 
-# Initialize and Run Application
 cd /work
 go mod init go/video/main
 go mod tidy
 go run /work/go/video/main.go
-EOF_START
+EOF_CP
 
 echo "${GREEN}✅ Startup script created successfully!${RESET}"
 echo
 
-# Step 5: Apply Startup Script
-echo "${GREEN}${BOLD}▬▬▬▬▬ SCRIPT DEPLOYMENT ▬▬▬▬▬${RESET}"
-echo "${YELLOW}Applying startup script to instance...${RESET}"
-gcloud compute instances add-metadata video-queue-monitor \
-  --zone $ZONE \
-  --metadata-from-file startup-script=startup-script.sh
-echo "${GREEN}✅ Startup script applied successfully!${RESET}"
+# Apply Startup Script and Start Instance
+echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬ INSTANCE DEPLOYMENT ▬▬▬▬▬▬▬▬${RESET}"
+echo "${YELLOW}Applying startup script and starting instance...${RESET}"
+gcloud compute instances add-metadata video-queue-monitor --project="$DEVSHELL_PROJECT_ID" --zone="$ZONE" --metadata-from-file startup-script=startup-script.sh
+gcloud compute instances start video-queue-monitor --project="$DEVSHELL_PROJECT_ID" --zone="$ZONE"
+echo "${GREEN}✅ Instance configured and started successfully!${RESET}"
 echo
 
-# Step 6: Start Instance
-echo "${GREEN}${BOLD}▬▬▬▬▬ INSTANCE STARTUP ▬▬▬▬▬${RESET}"
-echo "${YELLOW}Starting video-queue-monitor instance...${RESET}"
-gcloud compute instances start video-queue-monitor --zone $ZONE
-echo "${GREEN}✅ Instance started successfully!${RESET}"
-echo
-
-# Step 7: Monitoring Setup
-echo "${GREEN}${BOLD}▬▬▬▬▬ MONITORING CONFIGURATION ▬▬▬▬▬${RESET}"
+# Logging Metric Creation
+echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬ LOGGING METRIC ▬▬▬▬▬▬▬▬${RESET}"
 echo "${YELLOW}Creating logging metric for high resolution videos...${RESET}"
-gcloud logging metrics create $METRIC \
+gcloud logging metrics create $custom_metric \
     --description="Metric for high resolution video uploads" \
     --log-filter='textPayload=("file_format=4K" OR "file_format=8K")'
 echo "${GREEN}✅ Logging metric created successfully!${RESET}"
 echo
 
-# Step 8: Notification Channel
-echo "${GREEN}${BOLD}▬▬▬▬▬ NOTIFICATION SETUP ▬▬▬▬▬${RESET}"
+# Notification Channel Creation
+echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬ NOTIFICATION CHANNEL ▬▬▬▬▬▬▬▬${RESET}"
 echo "${YELLOW}Creating email notification channel...${RESET}"
-cat > email-channel.json <<EOF_END
+cat > email-channel.json <<EOF_CP
 {
   "type": "email",
-  "displayName": "video-queue-alerts",
-  "description": "Video Queue Monitoring Alerts",
+  "displayName": "DrAbhishekAlerts",
+  "description": "Video Queue Monitoring by Dr. Abhishek",
   "labels": {
     "email_address": "$USER_EMAIL"
   }
 }
-EOF_END
+EOF_CP
 
 gcloud beta monitoring channels create --channel-content-from-file="email-channel.json"
 echo "${GREEN}✅ Notification channel created successfully!${RESET}"
 echo
 
-# Step 9: Alert Policy
-echo "${GREEN}${BOLD}▬▬▬▬▬ ALERT POLICY SETUP ▬▬▬▬▬${RESET}"
+# Alert Policy Creation
+echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬ ALERT POLICY ▬▬▬▬▬▬▬▬${RESET}"
 echo "${YELLOW}Creating alert policy...${RESET}"
-email_channel_info=$(gcloud beta monitoring channels list)
-email_channel_id=$(echo "$email_channel_info" | grep -oP 'name: \K[^ ]+' | head -n 1)
+channel_info=$(gcloud beta monitoring channels list)
+channel_id=$(echo "$channel_info" | grep -oP 'name: \K[^ ]+' | head -n 1)
 
-cat > video-queue-alert.json <<EOF_END
+cat > video-queue-alert.json <<EOF_CP
 {
-  "displayName": "video-queue-alerts",
+  "displayName": "DrAbhishekVideoAlerts",
   "userLabels": {},
   "conditions": [
     {
       "displayName": "High Resolution Video Upload Rate",
       "conditionThreshold": {
-        "filter": "resource.type = \"gce_instance\" AND metric.type = \"logging.googleapis.com/user/$METRIC\"",
+        "filter": "resource.type = \"gce_instance\" AND metric.type = \"logging.googleapis.com/user/$custom_metric\"",
         "aggregations": [
           {
             "alignmentPeriod": "300s",
@@ -191,11 +201,11 @@ cat > video-queue-alert.json <<EOF_END
   "combiner": "OR",
   "enabled": true,
   "notificationChannels": [
-    "$email_channel_id"
+    "$channel_id"
   ],
   "severity": "SEVERITY_UNSPECIFIED"
 }
-EOF_END
+EOF_CP
 
 gcloud alpha monitoring policies create --policy-from-file=video-queue-alert.json
 echo "${GREEN}✅ Alert policy created successfully!${RESET}"
@@ -203,13 +213,10 @@ echo
 
 # Completion Section
 echo "${GREEN}${BOLD}╔════════════════════════════════════════════════════════╗${RESET}"
-echo "${GREEN}${BOLD}          LAB COMPLETED SUCCESSFULLY!                  ${RESET}"
+echo "${GREEN}${BOLD}         LAB COMPLETED SUCCESSFULLY!                  ${RESET}"
 echo "${GREEN}${BOLD}╚════════════════════════════════════════════════════════╝${RESET}"
-echo
-echo "${CYAN}${BOLD}📊 Monitoring Dashboard:${RESET}"
-echo "${BLUE}${UNDERLINE}https://console.cloud.google.com/monitoring/dashboards?project=$DEVSHELL_PROJECT_ID${RESET}"
 echo
 echo "${MAGENTA}${BOLD}For more cloud engineering tutorials, visit:${RESET}"
 echo "${BLUE}${UNDERLINE}https://www.youtube.com/@drabhishek.5460${RESET}"
 echo
-echo "${GREEN}${BOLD}Happy cloud monitoring!${RESET}"
+echo "${CYAN}${BOLD}Happy cloud monitoring!${RESET}"
