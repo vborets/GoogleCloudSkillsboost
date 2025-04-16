@@ -9,59 +9,43 @@ from vertexai.preview.generative_models import (
     HarmBlockThreshold,
     HarmCategory,
     Part,
+    SafetySetting,
 )
-from datetime import (
-    date,
-    timedelta,
-)
-# configure logging
+
+# Configure logging
 logging.basicConfig(level=logging.INFO)
-# attach a Cloud Logging handler to the root logger
-log_client = cloud_logging.Client()
-log_client.setup_logging()
+logger = logging.getLogger(__name__)
 
-PROJECT_ID = os.environ.get("GCP_PROJECT")  # Your Google Cloud Project ID
-LOCATION = os.environ.get("GCP_REGION")  # Your Google Cloud Project Region
+# Initialize Vertex AI
+PROJECT_ID = os.environ.get("GCP_PROJECT")
+LOCATION = os.environ.get("GCP_REGION")
 vertexai.init(project=PROJECT_ID, location=LOCATION)
-
 
 @st.cache_resource
 def load_models():
-    text_model_pro = GenerativeModel("gemini-pro")
-    return text_model_pro
-
+    return GenerativeModel("gemini-pro")
 
 def get_gemini_pro_text_response(
     model: GenerativeModel,
     contents: str,
     generation_config: GenerationConfig,
-    stream: bool = True,
 ):
-    safety_settings = {
-        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-    }
+    safety_settings = [
+        SafetySetting(category=HarmCategory.HARM_CATEGORY_HARASSMENT, threshold=HarmBlockThreshold.BLOCK_ONLY_HIGH),
+        SafetySetting(category=HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold=HarmBlockThreshold.BLOCK_ONLY_HIGH),
+        SafetySetting(category=HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold=HarmBlockThreshold.BLOCK_ONLY_HIGH),
+        SafetySetting(category=HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold=HarmBlockThreshold.BLOCK_ONLY_HIGH),
+    ]
 
-    responses = model.generate_content(
-        prompt,
+    response = model.generate_content(
+        [Part.from_text(contents)],
         generation_config=generation_config,
         safety_settings=safety_settings,
-        stream=stream,
+        stream=False,
     )
+    return response.text
 
-    final_response = []
-    for response in responses:
-        try:
-            # st.write(response.text)
-            final_response.append(response.text)
-        except IndexError:
-            # st.write(response)
-            final_response.append("")
-            continue
-    return " ".join(final_response)
-
+# Streamlit UI
 st.header("Vertex AI Gemini API", divider="gray")
 text_model_pro = load_models()
 
@@ -77,76 +61,49 @@ cuisine = st.selectbox(
 
 dietary_preference = st.selectbox(
     "Do you have any dietary preferences?",
-    ("Diabetese", "Glueten free", "Halal", "Keto", "Kosher", "Lactose Intolerance", "Paleo", "Vegan", "Vegetarian", "None"),
+    ("Diabetes", "Gluten free", "Halal", "Keto", "Kosher", "Lactose Intolerance", "Paleo", "Vegan", "Vegetarian", "None"),
     index=None,
-    placeholder="Select your desired dietary preference."
+    placeholder="Select your dietary preference."
 )
 
-allergy = st.text_input(
-    "Enter your food allergy:  \n\n", key="allergy", value="peanuts"
-)
-
-ingredient_1 = st.text_input(
-    "Enter your first ingredient:  \n\n", key="ingredient_1", value="ahi tuna"
-)
-
-ingredient_2 = st.text_input(
-    "Enter your second ingredient:  \n\n", key="ingredient_2", value="chicken breast"
-)
-
-ingredient_3 = st.text_input(
-    "Enter your third ingredient:  \n\n", key="ingredient_3", value="tofu"
-)
-
-# Task 2.5
-# Complete Streamlit framework code for the user interface, add the wine preference radio button to the interface.
-# https://docs.streamlit.io/library/api-reference/widgets/st.radio
-
-
-wine = st.radio (
-    "What wine do you prefer?\n\n", ["Red", "White", "None"], key="wine", horizontal=True
-)
-
-max_output_tokens = 2048
-
-# Task 2.6
-# Modify this prompt with the custom chef prompt.
-prompt = f"""I am a Chef.  I need to create {cuisine} \n
-recipes for customers who want {dietary_preference} meals. \n
-However, don't include recipes that use ingredients with the customer's {allergy} allergy. \n
-I have {ingredient_1}, \n
-{ingredient_2}, \n
-and {ingredient_3} \n
-in my kitchen and other ingredients. \n
-The customer's wine preference is {wine} \n
-Please provide some for meal recommendations.
-For each recommendation include preparation instructions,
-time to prepare
-and the recipe title at the beginning of the response.
-Then include the wine paring for each recommendation.
-At the end of the recommendation provide the calories associated with the meal
-and the nutritional facts.
-"""
-
-config = {
-    "temperature": 0.8,
-    "max_output_tokens": 2048,
-}
+allergy = st.text_input("Enter your food allergy:", key="allergy", value="peanuts")
+ingredient_1 = st.text_input("Enter your first ingredient:", key="ingredient_1", value="ahi tuna")
+ingredient_2 = st.text_input("Enter your second ingredient:", key="ingredient_2", value="chicken breast")
+ingredient_3 = st.text_input("Enter your third ingredient:", key="ingredient_3", value="tofu")
+wine = st.radio("What wine do you prefer?", ["Red", "White", "None"], key="wine", horizontal=True)
 
 generate_t2t = st.button("Generate my recipes.", key="generate_t2t")
-if generate_t2t and prompt:
-    # st.write(prompt)
-    with st.spinner("Generating your recipes using Gemini..."):
-        first_tab1, first_tab2 = st.tabs(["Recipes", "Prompt"])
-        with first_tab1:
-            response = get_gemini_pro_text_response(
-                text_model_pro,
-                prompt,
-                generation_config=config,
-            )
-            if response:
+if generate_t2t:
+    if not cuisine or not dietary_preference:
+        st.error("Please select both a cuisine and a dietary preference.")
+    else:
+        prompt = f"""I am a Chef. I need to create {cuisine} recipes for customers who want {dietary_preference} meals.
+        However, don't include recipes that use ingredients with the customer's {allergy} allergy.
+        I have {ingredient_1}, {ingredient_2}, and {ingredient_3} in my kitchen and other ingredients.
+        The customer's wine preference is {wine}.
+        Please provide some meal recommendations.
+        For each recommendation include:
+        - recipe title
+        - preparation instructions
+        - time to prepare
+        - wine pairing
+        - calories
+        - nutritional facts.
+        """
+
+        config = GenerationConfig(
+            temperature=0.8,
+            max_output_tokens=2048
+        )
+
+        with st.spinner("Generating your recipes using Gemini..."):
+            try:
+                response = get_gemini_pro_text_response(
+                    text_model_pro,
+                    prompt,
+                    generation_config=config,
+                )
                 st.write("Your recipes:")
                 st.write(response)
-                logging.info(response)
-        with first_tab2:
-            st.text(prompt)
+            except Exception as e:
+                st.error(f"Failed to generate recipes: {e}")
