@@ -1,14 +1,14 @@
 #!/bin/bash
+# Define color variables
 
-# Enhanced Color Definitions
-BLACK=$'\033[0;90m'
-RED=$'\033[0;91m'
-GREEN=$'\033[0;92m'
-YELLOW=$'\033[0;93m'
-BLUE=$'\033[0;94m'
-MAGENTA=$'\033[0;95m'
-CYAN=$'\033[0;96m'
-WHITE=$'\033[0;97m'
+BLACK=`tput setaf 0`
+RED=`tput setaf 1`
+GREEN=`tput setaf 2`
+YELLOW=`tput setaf 3`
+BLUE=`tput setaf 4`
+MAGENTA=`tput setaf 5`
+CYAN=`tput setaf 6`
+WHITE=`tput setaf 7`
 
 BG_BLACK=`tput setab 0`
 BG_RED=`tput setab 1`
@@ -22,91 +22,115 @@ BG_WHITE=`tput setab 7`
 BOLD=`tput bold`
 RESET=`tput sgr0`
 
-# Header Section
-echo "${BG_MAGENTA}${BOLD}╔════════════════════════════════════════════════════════╗${RESET}"
-echo "${BG_MAGENTA}${BOLD}         GEMINI STREAMLIT CLOUD RUN TUTORIAL            ${RESET}"
-echo "${BG_MAGENTA}${BOLD}╚════════════════════════════════════════════════════════╝${RESET}"
-echo
-echo "${CYAN}${BOLD}          Expert Tutorial by Dr. Abhishek              ${RESET}"
-echo "${YELLOW}For more GenAI tutorials, visit: https://www.youtube.com/@drabhishek.5460${RESET}"
-echo
-echo "${BLUE}${BOLD}⚡ Initializing Gemini Streamlit Setup...${RESET}"
-echo
+# Array of color codes excluding black and white
+TEXT_COLORS=($RED $GREEN $YELLOW $BLUE $MAGENTA $CYAN)
+BG_COLORS=($BG_RED $BG_GREEN $BG_YELLOW $BG_BLUE $BG_MAGENTA $BG_CYAN)
 
-# Authentication Check
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ AUTHENTICATION CHECK ▬▬▬▬▬▬▬▬▬${RESET}"
-echo "${YELLOW}Checking authenticated accounts...${RESET}"
-gcloud auth list
-echo "${GREEN}✅ Authentication verified!${RESET}"
-echo
+# Pick random colors
+RANDOM_TEXT_COLOR=${TEXT_COLORS[$RANDOM % ${#TEXT_COLORS[@]}]}
+RANDOM_BG_COLOR=${BG_COLORS[$RANDOM % ${#BG_COLORS[@]}]}
 
-# Service Enablement
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ SERVICE ENABLEMENT ▬▬▬▬▬▬▬▬▬${RESET}"
-echo "${YELLOW}Enabling Cloud Run API...${RESET}"
+#----------------------------------------------------start--------------------------------------------------#
+
+echo "${RANDOM_BG_COLOR}${RANDOM_TEXT_COLOR}${BOLD}Starting Execution${RESET}"
+
+# Step 1: Enable Cloud Run API
+echo "${CYAN}${BOLD}Enabling Cloud Run API...${RESET}"
 gcloud services enable run.googleapis.com
-echo "${GREEN}✅ Cloud Run API enabled!${RESET}"
-echo
 
-# Application Setup
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ APPLICATION SETUP ▬▬▬▬▬▬▬▬▬${RESET}"
-echo "${YELLOW}Cloning Generative AI repository...${RESET}"
+# Step 2: Clone the repository
+echo "${GREEN}${BOLD}Cloning Google Cloud generative AI repository...${RESET}"
 git clone https://github.com/GoogleCloudPlatform/generative-ai.git
+
+# Step 3: Navigate to the required directory
+echo "${YELLOW}${BOLD}Navigating to the 'gemini-streamlit-cloudrun' directory...${RESET}"
 cd generative-ai/gemini/sample-apps/gemini-streamlit-cloudrun
-echo "${GREEN}✅ Repository cloned successfully!${RESET}"
-echo
 
-# File Configuration
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ FILE CONFIGURATION ▬▬▬▬▬▬▬▬▬${RESET}"
-echo "${YELLOW}Downloading configuration files...${RESET}"
-rm -rf Dockerfile chef.py
+# Step 4: Remove existing files
+echo "${BLUE}${BOLD}Removing existing files: Dockerfile, chef.py, requirements.txt...${RESET}"
+rm -rf Dockerfile chef.py requirements.txt
 
-# Updated file locations
-wget https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Develop%20GenAI%20Apps%20with%20Gemini%20and%20Streamlit%3A%20Challenge%20Lab/Dockerfile.txt -O Dockerfile
+# Step 5: Download updated files
+echo "${RED}${BOLD}Downloading required files...${RESET}"
+wget https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Develop%20GenAI%20Apps%20with%20Gemini%20and%20Streamlit%3A%20Challenge%20Lab/Dockerfile
 wget https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Develop%20GenAI%20Apps%20with%20Gemini%20and%20Streamlit%3A%20Challenge%20Lab/chef.py
-curl -LO  https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Develop%20GenAI%20Apps%20with%20Gemini%20and%20Streamlit%3A%20Challenge%20Lab/bonustask.sh
+wget https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Develop%20GenAI%20Apps%20with%20Gemini%20and%20Streamlit%3A%20Challenge%20Lab/requirements.txt
 
-echo "${YELLOW}Setting execute permission for bonus task...${RESET}"
-chmod +x bonustask.sh
-
-echo "${YELLOW}Uploading chef.py to Cloud Storage...${RESET}"
+# Step 6: Upload chef.py to the Cloud Storage bucket
+echo "${CYAN}${BOLD}Uploading 'chef.py' to Cloud Storage bucket...${RESET}"
 gcloud storage cp chef.py gs://$DEVSHELL_PROJECT_ID-generative-ai/
-export PROJECT="$DEVSHELL_PROJECT_ID"
-echo "${GREEN}✅ Files configured and uploaded!${RESET}"
-echo
 
-# Environment Setup
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ ENVIRONMENT SETUP ▬▬▬▬▬▬▬▬▬${RESET}"
-echo "${YELLOW}Installing required packages...${RESET}"
-pip install google-cloud-aiplatform
+# Step 7: Set project and region variables
+echo "${GREEN}${BOLD}Setting GCP project and region variables...${RESET}"
+GCP_PROJECT=$(gcloud config get-value project)
+GCP_REGION=$(gcloud compute project-info describe \
+--format="value(commonInstanceMetadata.items[google-compute-default-region])")
+
+# Step 8: Create a virtual environment and install dependencies
+echo "${YELLOW}${BOLD}Setting up Python virtual environment...${RESET}"
 python3 -m venv gemini-streamlit
 source gemini-streamlit/bin/activate
-python3 -m pip install -r requirements.txt
-echo "${GREEN}✅ Environment setup complete!${RESET}"
-echo
 
-# Application Execution
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ APPLICATION EXECUTION ▬▬▬▬▬▬▬▬▬${RESET}"
-echo "${YELLOW}Running Streamlit application...${RESET}"
-streamlit run chef.py \
+# Install additional required packages
+echo "${MAGENTA}${BOLD}Installing additional dependencies...${RESET}"
+pip install google-cloud-logging
+pip install -r requirements.txt
+
+# Step 9: Start Streamlit application
+echo "${BLUE}${BOLD}Running Streamlit application in the background...${RESET}"
+nohup streamlit run chef.py \
   --browser.serverAddress=localhost \
   --server.enableCORS=false \
   --server.enableXsrfProtection=false \
-  --server.port 8080
+  --server.port 8080 > streamlit.log 2>&1 &
 
-# Bonus Task Execution
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ BONUS TASK ▬▬▬▬▬▬▬▬▬${RESET}"
-echo "${YELLOW}Running bonus task...${RESET}"
-./bonustask.sh
-echo "${GREEN}✅ Bonus task completed!${RESET}"
+# Step 10: Create Artifact Repository
+echo "${RED}${BOLD}Creating Artifact Registry repository...${RESET}"
+AR_REPO='chef-repo'
+SERVICE_NAME='chef-streamlit-app' 
+gcloud artifacts repositories create "$AR_REPO" --location="$GCP_REGION" --repository-format=Docker
+
+# Step 11: Submit Cloud Build
+echo "${CYAN}${BOLD}Submitting Cloud Build...${RESET}"
+gcloud builds submit --tag "$GCP_REGION-docker.pkg.dev/$GCP_PROJECT/$AR_REPO/$SERVICE_NAME"
+
+# Step 12: Deploy Cloud Run Service
+echo "${GREEN}${BOLD}Deploying Cloud Run service...${RESET}"
+gcloud run deploy "$SERVICE_NAME" \
+  --port=8080 \
+  --image="$GCP_REGION-docker.pkg.dev/$GCP_PROJECT/$AR_REPO/$SERVICE_NAME" \
+  --allow-unauthenticated \
+  --region=$GCP_REGION \
+  --platform=managed  \
+  --project=$GCP_PROJECT \
+  --set-env-vars=GCP_PROJECT=$GCP_PROJECT,GCP_REGION=$GCP_REGION
+
+# Step 13: Get Cloud Run Service URL
+echo "${YELLOW}${BOLD}Fetching Cloud Run service URL...${RESET}"
+CLOUD_RUN_URL=$(gcloud run services describe "$SERVICE_NAME" --region="$GCP_REGION" --format='value(status.url)')
+
+echo
+echo "${MAGENTA}${BOLD}Streamlit running at: ${RESET}""http://localhost:8080"
+echo
+echo "${BLUE}${BOLD}Cloud Run Service is available at: ${RESET}""$CLOUD_RUN_URL"
 echo
 
-# Completion Message
-echo "${BG_GREEN}${BOLD}╔════════════════════════════════════════════════════════╗${RESET}"
-echo "${BG_GREEN}${BOLD}         NOW ITS TIME FOR LAB STEPS FOLLOW VIDEO CAREFULLY              ${RESET}"
-echo "${BG_GREEN}${BOLD}╚════════════════════════════════════════════════════════╝${RESET}"
-echo
-echo "${RED}${BOLD}🙏 Thank you for following Dr. Abhishek's tutorial!${RESET}"
-echo "${YELLOW}${BOLD}📺 Subscribe for more GenAI content:${RESET}"
-echo "${BLUE}https://www.youtube.com/@drabhishek.5460${RESET}"
-echo
-echo "${MAGENTA}${BOLD}🚀 Happy building with Gemini and Streamlit!${RESET}"
+# Clean up files
+remove_files() {
+    # Loop through all files in the current directory
+    for file in *; do
+        # Check if the file name starts with "gsp", "arc", or "shell"
+        if [[ "$file" == gsp* || "$file" == arc* || "$file" == shell* ]]; then
+            # Check if it's a regular file (not a directory)
+            if [[ -f "$file" ]]; then
+                # Remove the file and echo the file name
+                rm "$file"
+                echo "File removed: $file"
+            fi
+        fi
+    done
+}
+
+remove_files
+
+echo "${GREEN}${BOLD}Lab is complete now do like & subscribe the channel${RESET}"
