@@ -14,7 +14,10 @@ sudo chmod +x Abhishektask1.sh
 
 
 If App is not working then run this Below command 
+```
+pip install google-cloud-logging
 
+```
 ```bash
 cd generative-ai/gemini/sample-apps/gemini-streamlit-cloudrun
 pip install google-cloud-aiplatform
