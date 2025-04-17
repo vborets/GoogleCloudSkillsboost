@@ -26,7 +26,7 @@ RESET=`tput sgr0`
 
 # Welcome Message
 echo "${BG_BLUE}${WHITE}${BOLD}╔════════════════════════════════════════════════════════╗${RESET}"
-echo "${BG_BLUE}${WHITE}${BOLD}           WELCOME TO DR ABHISHEK CLOUD TTORIALS      ${RESET}"
+echo "${BG_BLUE}${WHITE}${BOLD}             WELCOME TO DR ABHISHEK CLOUD TUTORIAL             ${RESET}"
 echo "${BG_BLUE}${WHITE}${BOLD}╚════════════════════════════════════════════════════════╝${RESET}"
 echo
 echo "${CYAN}${BOLD}          Tutorial by Dr. Abhishek                       ${RESET}"
@@ -35,22 +35,22 @@ echo
 echo "${BLUE}${BOLD}⚡ Initializing XSS Test Setup...${RESET}"
 echo
 
-# Region/Zone Selection
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ REGION SELECTION ▬▬▬▬▬▬▬▬▬${RESET}"
-echo "${YELLOW}Please select your preferred zone:${RESET}"
-echo "1) us-central1-a"
-echo "2) us-east1-b"
-echo "3) europe-west1-b"
-echo "4) asia-southeast1-a"
-read -p "Enter your choice (1-4): " zone_choice
+# Zone Input
+echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ ZONE SELECTION ▬▬▬▬▬▬▬▬▬${RESET}"
+echo "${YELLOW}Please enter your preferred zone (e.g., us-central1-a):${RESET}"
+echo "${CYAN}Common options:${RESET}"
+echo "  - us-central1-a"
+echo "  - us-east1-b" 
+echo "  - europe-west1-b"
+echo "  - asia-southeast1-a"
+echo
+read -p "Enter your zone: " ZONE
 
-case $zone_choice in
-    1) ZONE="us-central1-a" ;;
-    2) ZONE="us-east1-b" ;;
-    3) ZONE="europe-west1-b" ;;
-    4) ZONE="asia-southeast1-a" ;;
-    *) ZONE="us-central1-a" ;;
-esac
+# Validate zone format
+if [[ ! $ZONE =~ ^[a-z]+-[a-z]+[0-9]-[a-z]$ ]]; then
+    echo "${RED}Invalid zone format. Please use format like 'us-central1-a'${RESET}"
+    exit 1
+fi
 
 export ZONE
 export REGION="${ZONE%-*}"
@@ -103,52 +103,15 @@ echo
 echo "${YELLOW}Go to Cloud Web Security Scanner:${RESET}"
 echo "${BLUE}https://console.cloud.google.com/security/web-scanner/scanConfigs${RESET}"
 echo
-read -p "Have you verified Task 2 scores? Enter 'y' to continue: " confirm
+read -p "Have you verified the scan results? Enter 'y' to continue: " confirm
 if [ "$confirm" != "y" ]; then
-    echo "${RED}Aborting script execution.${RESET}"
-    exit 1
+    echo "${RED}Script paused. Run again after verification.${RESET}"
+    exit 0
 fi
 
 # Part 2 Execution
 echo "${CYAN}Setting up Flask application...${RESET}"
 gcloud compute ssh xss-test-vm-instance --zone $ZONE --project=$DEVSHELL_PROJECT_ID --quiet --command "gsutil cp gs://cloud-training/GCPSEC-ScannerAppEngine/flask_code.tar . && tar xvf flask_code.tar && python3 app.py"
-
-# Create local app.py
-echo "${CYAN}Creating local test application...${RESET}"
-cat > app.py <<EOF_CP
-import flask
-app = flask.Flask(__name__)
-input_string = ""
-
-html_escape_table = {
-  "&": "&amp;",
-  '"': "&quot;",
-  "'": "&apos;",
-  ">": "&gt;",
-  "<": "&lt;",
-  }
-
-@app.route('/', methods=["GET", "POST"])
-def input():
-  global input_string
-  if flask.request.method == "GET":
-    return flask.render_template("input.html")
-  else:
-    input_string = flask.request.form.get("input")
-    return flask.redirect("output")
-
-
-@app.route('/output')
-def output():
-  output_string = "".join([html_escape_table.get(c, c) for c in input_string])
-  return flask.render_template("output.html", output=output_string)
-
-if __name__ == '__main__':
-  app.run(host='0.0.0.0', port=8080)
-EOF_CP
-
-echo "${CYAN}Starting local test server...${RESET}"
-python3 app.py
 
 # Completion Message
 echo "${BG_GREEN}${BLACK}${BOLD}╔════════════════════════════════════════════════════════╗${RESET}"
