@@ -1,6 +1,9 @@
 # Develop GenAI Apps with Gemini and Streamlit: Challenge Lab || [GSP517](https://www.cloudskillsboost.google/focuses/87315?parent=catalog) ||
 
 
+###  welcome back to the channel let's start this lab
+
+
 * Navigate to **Workbench** from [here](https://console.cloud.google.com/vertex-ai/workbench/instances?)
 
 ### Run it on jupyter noteboosk terminal
