@@ -35,24 +35,11 @@ echo
 echo "${YELLOW}${BOLD}Starting${RESET} ${GREEN}${BOLD}Execution${RESET}"
 echo
 
-# Set region interactively only when needed
+# Set region interactively with free-form input
 set_region() {
-    echo "${MAGENTA}${BOLD}Please select your region:${RESET}"
-    echo "${CYAN}1) us-central1"
-    echo "2) us-east1"
-    echo "3) europe-west1"
-    echo "4) asia-southeast1${RESET}"
-    read -p "Enter your choice (1-4): " region_choice
-
-    case $region_choice in
-        1) export REGION="us-central1" ;;
-        2) export REGION="us-east1" ;;
-        3) export REGION="europe-west1" ;;
-        4) export REGION="asia-southeast1" ;;
-        *) export REGION="us-central1" ;;
-    esac
-
-    echo "${GREEN}Selected Region: ${REGION}${RESET}"
+    echo "${MAGENTA}${BOLD}Please enter your preferred zone (e.g., us-central1, europe-west1, etc.):${RESET}"
+    read -p "Zone: " REGION
+    echo "${GREEN}Selected Zone: ${REGION}${RESET}"
     echo
 }
 
@@ -87,7 +74,7 @@ gsutil cp end_station_name.csv gs://$DEVSHELL_PROJECT_ID/ || {
     exit 1
 }
 
-# Set region only when creating Cloud SQL instance
+# Set region interactively
 set_region
 
 # Create Cloud SQL instance
@@ -96,7 +83,7 @@ gcloud sql instances create my-demo \
     --database-version=MYSQL_8_0 \
     --region=$REGION \
     --tier=db-f1-micro \
-    --root-password=quickgcplab || {
+    --root-password=abhishek || {
     echo "${RED}Failed to create Cloud SQL instance${RESET}"
     exit 1
 }
