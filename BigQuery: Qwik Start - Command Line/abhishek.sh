@@ -42,7 +42,7 @@ RESET='\033[0m'
 
 echo -e "${BOLD_CYAN}╔════════════════════════════════════════╗${RESET}"
 echo -e "${BOLD_CYAN}║                                        ║${RESET}"
-echo -e "${BOLD_CYAN}║   ${BOLD_YELLOW}Welcome to Dr abhishek cloud${BOLD_GREEN}Execution ${BOLD_CYAN}                ║${RESET}"
+echo -e "${BOLD_CYAN}║   ${BOLD_YELLOW}Welcome to Dr abhishek cloud${BOLD_GREEN} Tutorials ${BOLD_CYAN}                ║${RESET}"
 echo -e "${BOLD_CYAN}║                                        ║${RESET}"
 echo -e "${BOLD_CYAN}╚════════════════════════════════════════╝${RESET}"
 echo ""
