@@ -1,4 +1,7 @@
-## Monitor and Log with Google Cloud Observability: Challenge Lab
+## Monitor and Log with Google Cloud Observability: Challenge Lab  
+
+[![Open Lab](https://img.shields.io/badge/Open%20Lab-Click%20Here-brightgreen)](https://www.cloudskillsboost.google/focuses/13786?catalog_rank=%7B%22rank%22%3A2%2C%22num_filters%22%3A0%2C%22has_search%22%3Atrue%7D&parent=catalog&search_id=44387624)
+
 
 
 
