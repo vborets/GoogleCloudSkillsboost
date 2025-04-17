@@ -23,7 +23,7 @@ vertexai.init(project=PROJECT_ID, location=LOCATION)
 
 @st.cache_resource
 def load_models():
-    return GenerativeModel("gemini-1.5-pro-preview")
+    return GenerativeModel("gemini-pro")
 
 def get_gemini_pro_text_response(
     model: GenerativeModel,
@@ -49,7 +49,7 @@ def get_gemini_pro_text_response(
 st.header("Vertex AI Gemini API", divider="gray")
 text_model_pro = load_models()
 
-st.write("Using Gemini 1.5 Pro - Text only model")
+st.write("Using Gemini Pro - Text only model")
 st.subheader("AI Chef")
 
 cuisine = st.selectbox(
@@ -96,7 +96,7 @@ if generate_t2t:
             max_output_tokens=2048
         )
 
-        with st.spinner("Generating your recipes using Gemini 1.5 Pro..."):
+        with st.spinner("Generating your recipes using Gemini Pro..."):
             try:
                 response = get_gemini_pro_text_response(
                     text_model_pro,
