@@ -1,134 +1,290 @@
 #!/bin/bash
+# Color definitions
+BLACK='\033[0;30m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+WHITE='\033[0;37m'
+BRIGHT_BLACK='\033[0;90m'
+BRIGHT_RED='\033[0;91m'
+BRIGHT_GREEN='\033[0;92m'
+BRIGHT_YELLOW='\033[0;93m'
+BRIGHT_BLUE='\033[0;94m'
+BRIGHT_PURPLE='\033[0;95m'
+BRIGHT_CYAN='\033[0;96m'
+BRIGHT_WHITE='\033[0;97m'
+BOLD='\033[1m'
+UNDERLINE='\033[4m'
+RESET='\033[0m'
 
-# Modern Color Palette
-DARK_BLUE=$(tput setaf 27)
-TEAL=$(tput setaf 50)
-PURPLE=$(tput setaf 129)
-ORANGE=$(tput setaf 208)
-LIME=$(tput setaf 118)
-PINK=$(tput setaf 200)
-RED=$(tput setaf 196)
-YELLOW=$(tput setaf 3)
-BOLD=$(tput bold)
-RESET=$(tput sgr0)
-
-
-spinner() {
-    local pid=$!
-    local delay=0.1
-    local spinstr='|/-\'
-    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
-        local temp=${spinstr#?}
-        printf " [%c]  " "$spinstr"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-        printf "\b\b\b\b\b\b"
-    done
-    printf "    \b\b\b\b"
-}
-
-# Function to validate input
-validate_input() {
-    local input=$1
-    local name=$2
-    if [[ -z "$input" ]]; then
-        echo "${RED}${BOLD}Error: $name cannot be empty${RESET}"
-        exit 1
-    fi
-}
-
-# Clear screen and display header
+# Clear screen and display welcome banner
 clear
+echo -e "${BRIGHT_CYAN}${BOLD}"
+echo "  ____                          _     _ _     _       "
+echo " |  _ \ _ __ ___   ___ ___   __| | __| | |__ | | ___ "
+echo " | | | | '__/ _ \ / __/ _ \ / _\` |/ _\` | '_ \| |/ _ \\"
+echo " | |_| | | | (_) | (_| (_) | (_| | (_| | |_) | |  __/"
+echo " |____/|_|  \___/ \___\___/ \__,_|\__,_|_.__/|_|\___|"
+echo -e "${RESET}"
+echo -e "${BRIGHT_WHITE}${BOLD}Welcome to Dr. Abhishek's Cloud Tutorials${RESET}"
+echo -e "${BRIGHT_WHITE}YouTube: ${UNDERLINE}https://www.youtube.com/@drabhishek.5460${RESET}"
+echo -e "${BRIGHT_CYAN}${BOLD}=========================================${RESET}"
+echo -e "${BRIGHT_CYAN}${BOLD}         WELCOME TO DR ABHISHEK CLOUD TUTORIAL          ${RESET}"
+echo -e "${BRIGHT_CYAN}${BOLD}=========================================${RESET}"
 echo
-echo "${DARK_BLUE}${BOLD}╔════════════════════════════════════════════════════╗"
-echo "       WELCOME TO DR ABHISHEK CLOUD  TUTORIALS      "
-echo "╚════════════════════════════════════════════════════╝${RESET}"
+
+# Collect user input
+read -p "${BRIGHT_YELLOW}${BOLD}Enter the first REGION: ${RESET}" REGION1
+echo -e "${BRIGHT_GREEN}${BOLD}First REGION set to:${RESET} ${BRIGHT_CYAN}${BOLD}$REGION1${RESET}"
 echo
 
-# Set project ID
-export DEVSHELL_PROJECT_ID=$(gcloud config get-value project)
-echo "${LIME}${BOLD}✔ Project ID: ${TEAL}$DEVSHELL_PROJECT_ID${RESET}"
+read -p "${BRIGHT_YELLOW}${BOLD}Enter the second REGION: ${RESET}" REGION2
+echo -e "${BRIGHT_GREEN}${BOLD}Second REGION set to:${RESET} ${BRIGHT_CYAN}${BOLD}$REGION2${RESET}"
 echo
 
-# Step 1: Create Load Balancer Configuration
-echo "${PURPLE}${BOLD}▐▓▒▌ STEP 1: LOAD BALANCER CONFIGURATION ${DARK_BLUE}${BOLD}◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈${RESET}"
+read -p "${BRIGHT_YELLOW}${BOLD}Enter the VM_ZONE: ${RESET}" VM_ZONE
+echo -e "${BRIGHT_GREEN}${BOLD}VM_ZONE set to:${RESET} ${BRIGHT_CYAN}${BOLD}$VM_ZONE${RESET}"
 echo
 
-# Set load balancer name
-LB_NAME="http-lb"
-echo "${LIME}${BOLD}✔ Load Balancer Name: ${TEAL}$LB_NAME${RESET}"
+# Export variables
+export REGION1 REGION2 VM_ZONE
+export INSTANCE_NAME=$REGION1-mig
+export INSTANCE_NAME_2=$REGION2-mig
 
-# Create backend service
-echo -n "${TEAL}${BOLD}⚖️ Creating backend service..."
-BACKEND_SERVICE_NAME="${LB_NAME}-backend-service"
-gcloud compute backend-services create $BACKEND_SERVICE_NAME \
-    --protocol=HTTP \
-    --port-name=http \
-    --global \
-    --enable-cdn \
-    --connection-draining-timeout=300 > /dev/null 2>&1 &
-spinner
-echo -e "\r${LIME}${BOLD}✔ Backend service created: ${TEAL}$BACKEND_SERVICE_NAME          ${RESET}"
+# Function to display status messages
+status() {
+    echo -e "${BRIGHT_BLUE}${BOLD}[$(date +'%T')] ${1}${RESET}"
+}
 
-# Create URL map
-echo -n "${TEAL}${BOLD}🗺️ Creating URL map..."
-URL_MAP_NAME="${LB_NAME}-url-map"
-gcloud compute url-maps create $URL_MAP_NAME \
-    --default-service $BACKEND_SERVICE_NAME > /dev/null 2>&1 &
-spinner
-echo -e "\r${LIME}${BOLD}✔ URL map created: ${TEAL}$URL_MAP_NAME          ${RESET}"
+# Function to handle errors
+error() {
+    echo -e "${BRIGHT_RED}${BOLD}[ERROR] ${1}${RESET}"
+    exit 1
+}
 
-# Create target HTTP proxy
-echo -n "${TEAL}${BOLD}🎯 Creating target HTTP proxy..."
-TARGET_PROXY_NAME="${LB_NAME}-target-proxy"
-gcloud compute target-http-proxies create $TARGET_PROXY_NAME \
-    --url-map $URL_MAP_NAME > /dev/null 2>&1 &
-spinner
-echo -e "\r${LIME}${BOLD}✔ Target HTTP proxy created: ${TEAL}$TARGET_PROXY_NAME          ${RESET}"
+# Configure firewall rules
+status "Configuring firewall rules..."
+gcloud compute --project=$DEVSHELL_PROJECT_ID firewall-rules create default-allow-http \
+    --direction=INGRESS --priority=1000 --network=default --action=ALLOW \
+    --rules=tcp:80 --source-ranges=0.0.0.0/0 --target-tags=http-server || error "Failed to create HTTP firewall rule"
 
-# Create forwarding rule (IPv4)
-echo -n "${TEAL}${BOLD}🚦 Creating IPv4 forwarding rule..."
-gcloud compute forwarding-rules create ${LB_NAME}-forwarding-rule \
-    --global \
-    --target-http-proxy=$TARGET_PROXY_NAME \
-    --ports=80 \
-    --network-tier=PREMIUM > /dev/null 2>&1 &
-spinner
-echo -e "\r${LIME}${BOLD}✔ IPv4 forwarding rule created          ${RESET}"
+gcloud compute --project=$DEVSHELL_PROJECT_ID firewall-rules create default-allow-health-check \
+    --direction=INGRESS --priority=1000 --network=default --action=ALLOW \
+    --rules=tcp --source-ranges=130.211.0.0/22,35.191.0.0/16 --target-tags=http-server || error "Failed to create health check firewall rule"
 
-# Create forwarding rule (IPv6)
-echo -n "${TEAL}${BOLD}🚦 Creating IPv6 forwarding rule..."
-gcloud compute forwarding-rules create ${LB_NAME}-forwarding-rule-ipv6 \
-    --global \
-    --target-http-proxy=$TARGET_PROXY_NAME \
-    --ports=80 \
-    --ip-version=IPV6 \
-    --network-tier=PREMIUM > /dev/null 2>&1 &
-spinner
-echo -e "\r${LIME}${BOLD}✔ IPv6 forwarding rule created          ${RESET}"
+# Create instance templates
+status "Creating instance templates..."
+gcloud compute instance-templates create $REGION1-template \
+    --project=$DEVSHELL_PROJECT_ID --machine-type=e2-micro \
+    --network-interface=network-tier=PREMIUM,subnet=default \
+    --metadata=startup-script-url=gs://cloud-training/gcpnet/httplb/startup.sh,enable-oslogin=true \
+    --maintenance-policy=MIGRATE --provisioning-model=STANDARD --region=$REGION1 \
+    --tags=http-server,https-server \
+    --create-disk=auto-delete=yes,boot=yes,device-name=$REGION1-template,image=projects/debian-cloud/global/images/debian-11-bullseye-v20230629,mode=rw,size=10,type=pd-balanced \
+    --no-shielded-secure-boot --shielded-vtpm --shielded-integrity-monitoring --reservation-affinity=any || error "Failed to create $REGION1 template"
 
-# Get Load Balancer IP
-echo -n "${TEAL}${BOLD}🔍 Retrieving Load Balancer IP..."
-LB_IP_ADDRESS=$(gcloud compute forwarding-rules describe ${LB_NAME}-forwarding-rule --global --format="value(IPAddress)")
-echo -e "\r${LIME}${BOLD}✔ Load Balancer IP: ${TEAL}$LB_IP_ADDRESS          ${RESET}"
+gcloud compute instance-templates create $REGION2-template \
+    --project=$DEVSHELL_PROJECT_ID --machine-type=e2-micro \
+    --network-interface=network-tier=PREMIUM,subnet=default \
+    --metadata=startup-script-url=gs://cloud-training/gcpnet/httplb/startup.sh,enable-oslogin=true \
+    --maintenance-policy=MIGRATE --provisioning-model=STANDARD --region=$REGION2 \
+    --tags=http-server,https-server \
+    --create-disk=auto-delete=yes,boot=yes,device-name=$REGION2-template,image=projects/debian-cloud/global/images/debian-11-bullseye-v20230629,mode=rw,size=10,type=pd-balanced \
+    --no-shielded-secure-boot --shielded-vtpm --shielded-integrity-monitoring --reservation-affinity=any || error "Failed to create $REGION2 template"
 
-# Completion Message
-echo
-echo "${DARK_BLUE}${BOLD}╔════════════════════════════════════════════════════╗"
-echo "       GLOBAL HTTP(S) LOAD BALANCER CREATION COMPLETE!      "
-echo "╚════════════════════════════════════════════════════╝${RESET}"
-echo
-echo "${LIME}${BOLD}✔ Load Balancer Name: ${TEAL}$LB_NAME${RESET}"
-echo "${LIME}${BOLD}✔ Load Balancer IP: ${TEAL}$LB_IP_ADDRESS${RESET}"
-echo "${LIME}${BOLD}✔ Backend Service: ${TEAL}$BACKEND_SERVICE_NAME${RESET}"
-echo "${LIME}${BOLD}✔ URL Map: ${TEAL}$URL_MAP_NAME${RESET}"
-echo "${LIME}${BOLD}✔ Target HTTP Proxy: ${TEAL}$TARGET_PROXY_NAME${RESET}"
-echo
-echo "${YELLOW}${BOLD}Next steps:"
-echo "1. Add backend services and instance groups to your load balancer"
-echo "2. Configure health checks for your backends"
-echo "3. Set up any additional routing rules as needed"
-echo
-echo "${PURPLE}${BOLD}For more cloud engineering tutorials, visit:"
-echo "${TEAL}https://www.youtube.com/@drabhishek.5460/${RESET}"
+# Create managed instance groups
+status "Creating managed instance groups..."
+gcloud beta compute instance-groups managed create $REGION1-mig \
+    --project=$DEVSHELL_PROJECT_ID --base-instance-name=$REGION1-mig \
+    --size=1 --template=$REGION1-template --region=$REGION1 \
+    --target-distribution-shape=EVEN --instance-redistribution-type=PROACTIVE \
+    --list-managed-instances-results=PAGELESS --no-force-update-on-repair || error "Failed to create $REGION1 MIG"
+
+gcloud beta compute instance-groups managed set-autoscaling $REGION1-mig \
+    --project=$DEVSHELL_PROJECT_ID --region=$REGION1 \
+    --cool-down-period=45 --max-num-replicas=2 --min-num-replicas=1 \
+    --mode=on --target-cpu-utilization=0.8 || error "Failed to set autoscaling for $REGION1 MIG"
+
+gcloud beta compute instance-groups managed create $REGION2-mig \
+    --project=$DEVSHELL_PROJECT_ID --base-instance-name=$REGION2-mig \
+    --size=1 --template=$REGION2-template --region=$REGION2 \
+    --target-distribution-shape=EVEN --instance-redistribution-type=PROACTIVE \
+    --list-managed-instances-results=PAGELESS --no-force-update-on-repair || error "Failed to create $REGION2 MIG"
+
+gcloud beta compute instance-groups managed set-autoscaling $REGION2-mig \
+    --project=$DEVSHELL_PROJECT_ID --region=$REGION2 \
+    --cool-down-period=45 --max-num-replicas=2 --min-num-replicas=1 \
+    --mode=on --target-cpu-utilization=0.8 || error "Failed to set autoscaling for $REGION2 MIG"
+
+# Load balancer setup
+DEVSHELL_PROJECT_ID=$(gcloud config get-value project)
+TOKEN=$(gcloud auth application-default print-access-token)
+
+status "Creating health check..."
+curl -X POST -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
+    -d '{
+        "checkIntervalSec": 5,
+        "healthyThreshold": 2,
+        "name": "http-health-check",
+        "tcpHealthCheck": {"port": 80, "proxyHeader": "NONE"},
+        "timeoutSec": 5,
+        "type": "TCP",
+        "unhealthyThreshold": 2
+    }' \
+    "https://compute.googleapis.com/compute/v1/projects/$DEVSHELL_PROJECT_ID/global/healthChecks" || error "Failed to create health check"
+sleep 60
+
+status "Creating backend service..."
+curl -X POST -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
+    -d '{
+        "backends": [
+            {
+                "balancingMode": "RATE",
+                "capacityScaler": 1,
+                "group": "projects/'"$DEVSHELL_PROJECT_ID"'/regions/'"$REGION1"'/instanceGroups/'"$REGION1-mig"'",
+                "maxRatePerInstance": 50
+            },
+            {
+                "balancingMode": "UTILIZATION",
+                "capacityScaler": 1,
+                "group": "projects/'"$DEVSHELL_PROJECT_ID"'/regions/'"$REGION2"'/instanceGroups/'"$REGION2-mig"'",
+                "maxRatePerInstance": 80,
+                "maxUtilization": 0.8
+            }
+        ],
+        "cdnPolicy": {
+            "cacheKeyPolicy": {
+                "includeHost": true,
+                "includeProtocol": true,
+                "includeQueryString": true
+            },
+            "cacheMode": "CACHE_ALL_STATIC",
+            "clientTtl": 3600,
+            "defaultTtl": 3600,
+            "maxTtl": 86400
+        },
+        "enableCDN": true,
+        "healthChecks": ["projects/'"$DEVSHELL_PROJECT_ID"'/global/healthChecks/http-health-check"],
+        "loadBalancingScheme": "EXTERNAL",
+        "logConfig": {"enable": true, "sampleRate": 1},
+        "name": "http-backend"
+    }' \
+    "https://compute.googleapis.com/compute/v1/projects/$DEVSHELL_PROJECT_ID/global/backendServices" || error "Failed to create backend service"
+sleep 60
+
+status "Creating URL map..."
+curl -X POST -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
+    -d '{
+        "defaultService": "projects/'"$DEVSHELL_PROJECT_ID"'/global/backendServices/http-backend",
+        "name": "http-lb"
+    }' \
+    "https://compute.googleapis.com/compute/v1/projects/$DEVSHELL_PROJECT_ID/global/urlMaps" || error "Failed to create URL map"
+sleep 60
+
+status "Creating target HTTP proxy..."
+curl -X POST -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
+    -d '{
+        "name": "http-lb-target-proxy",
+        "urlMap": "projects/'"$DEVSHELL_PROJECT_ID"'/global/urlMaps/http-lb"
+    }' \
+    "https://compute.googleapis.com/compute/v1/projects/$DEVSHELL_PROJECT_ID/global/targetHttpProxies" || error "Failed to create target HTTP proxy"
+sleep 60
+
+status "Creating forwarding rule..."
+curl -X POST -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
+    -d '{
+        "IPProtocol": "TCP",
+        "ipVersion": "IPV4",
+        "loadBalancingScheme": "EXTERNAL",
+        "name": "http-lb-forwarding-rule",
+        "networkTier": "PREMIUM",
+        "portRange": "80",
+        "target": "projects/'"$DEVSHELL_PROJECT_ID"'/global/targetHttpProxies/http-lb-target-proxy"
+    }' \
+    "https://compute.googleapis.com/compute/v1/projects/$DEVSHELL_PROJECT_ID/global/forwardingRules" || error "Failed to create forwarding rule"
+sleep 60
+
+status "Setting named ports for instance groups..."
+curl -X POST -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
+    -d '{"namedPorts": [{"name": "http", "port": 80}]}' \
+    "https://compute.googleapis.com/compute/v1/projects/$DEVSHELL_PROJECT_ID/regions/$REGION2/instanceGroups/$INSTANCE_NAME_2/setNamedPorts" || error "Failed to set named ports for $REGION2"
+sleep 60
+
+curl -X POST -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
+    -d '{"namedPorts": [{"name": "http", "port": 80}]}' \
+    "https://compute.googleapis.com/compute/v1/projects/$DEVSHELL_PROJECT_ID/regions/$REGION1/instanceGroups/$INSTANCE_NAME/setNamedPorts" || error "Failed to set named ports for $REGION1"
+sleep 60
+
+status "Creating siege VM for testing..."
+gcloud compute instances create siege-vm \
+    --project=$DEVSHELL_PROJECT_ID --zone=$VM_ZONE \
+    --machine-type=e2-medium --network-interface=network-tier=PREMIUM,stack-type=IPV4_ONLY,subnet=default \
+    --metadata=enable-oslogin=true --maintenance-policy=MIGRATE --provisioning-model=STANDARD \
+    --create-disk=auto-delete=yes,boot=yes,device-name=siege-vm,image=projects/debian-cloud/global/images/debian-11-bullseye-v20230629,mode=rw,size=10,type=projects/$DEVSHELL_PROJECT_ID/zones/us-central1-c/diskTypes/pd-balanced \
+    --no-shielded-secure-boot --shielded-vtpm --shielded-integrity-monitoring --reservation-affinity=any || error "Failed to create siege VM"
+sleep 60
+
+status "Retrieving siege VM external IP..."
+export EXTERNAL_IP=$(gcloud compute instances describe siege-vm --zone=$VM_ZONE --format="get(networkInterfaces[0].accessConfigs[0].natIP)") || error "Failed to get siege VM IP"
+echo -e "${BRIGHT_GREEN}Siege VM External IP: ${BRIGHT_CYAN}$EXTERNAL_IP${RESET}"
+sleep 20
+
+status "Creating Cloud Armor security policy..."
+curl -X POST -H "Authorization: Bearer $(gcloud auth print-access-token)" -H "Content-Type: application/json" \
+    -d '{
+        "name": "denylist-siege",
+        "rules": [
+            {
+                "action": "deny(403)",
+                "match": {
+                    "config": {"srcIpRanges": ["'"${EXTERNAL_IP}"'"]},
+                    "versionedExpr": "SRC_IPS_V1"
+                },
+                "priority": 1000
+            },
+            {
+                "action": "allow",
+                "match": {
+                    "config": {"srcIpRanges": ["*"]},
+                    "versionedExpr": "SRC_IPS_V1"
+                },
+                "priority": 2147483647
+            }
+        ],
+        "type": "CLOUD_ARMOR"
+    }' \
+    "https://compute.googleapis.com/compute/v1/projects/$DEVSHELL_PROJECT_ID/global/securityPolicies" || error "Failed to create security policy"
+sleep 60
+
+status "Attaching security policy to backend service..."
+curl -X POST -H "Authorization: Bearer $(gcloud auth print-access-token)" -H "Content-Type: application/json" \
+    -d "{\"securityPolicy\": \"projects/$DEVSHELL_PROJECT_ID/global/securityPolicies/denylist-siege\"}" \
+    "https://compute.googleapis.com/compute/v1/projects/$DEVSHELL_PROJECT_ID/global/backendServices/http-backend/setSecurityPolicy" || error "Failed to attach security policy"
+sleep 60
+
+status "Retrieving load balancer IP address..."
+LB_IP_ADDRESS=$(gcloud compute forwarding-rules describe http-lb-forwarding-rule --global --format="value(IPAddress)") || error "Failed to get LB IP"
+echo -e "${BRIGHT_GREEN}Load Balancer IP Address: ${BRIGHT_CYAN}$LB_IP_ADDRESS${RESET}"
+
+status "Running siege test from the siege VM..."
+gcloud compute ssh --zone "$VM_ZONE" "siege-vm" --project "$DEVSHELL_PROJECT_ID" --quiet \
+    --command "sudo apt-get -y update && sudo apt-get -y install siege && export LB_IP=$LB_IP_ADDRESS && echo 'Starting siege test...' && siege -c 150 -t 120s http://\$LB_IP && echo 'Siege test finished.'" || error "Siege test failed"
+
+echo -e "${BRIGHT_GREEN}${BOLD}"
+echo "========================================="
+echo "          DEPLOYMENT COMPLETE            "
+echo "========================================="
+echo -e "${RESET}"
+echo -e "${BRIGHT_WHITE}Thank you${RESET}"
+echo -e "${BRIGHT_WHITE}For more tutorials, visit: ${UNDERLINE}https://www.youtube.com/@drabhishek.5460${RESET}"
 echo
