@@ -1,185 +1,221 @@
 #!/bin/bash
 
-# Enhanced Color Definitions
-BLACK=$'\033[0;90m'
-RED=$'\033[0;91m'
-GREEN=$'\033[0;92m'
-YELLOW=$'\033[0;93m'
-BLUE=$'\033[0;94m'
-MAGENTA=$'\033[0;95m'
-CYAN=$'\033[0;96m'
-WHITE=$'\033[0;97m'
+BLACK=$(tput setaf 0)
+RED=$(tput setaf 1)
+GREEN=$(tput setaf 2)
+YELLOW=$(tput setaf 3)
+BLUE=$(tput setaf 4)
+MAGENTA=$(tput setaf 5)
+CYAN=$(tput setaf 6)
+WHITE=$(tput setaf 7)
 
-NO_COLOR=$'\033[0m'
-RESET=$'\033[0m'
-BOLD=$'\033[1m'
-UNDERLINE=$'\033[4m'
+BG_BLACK=$(tput setab 0)
+BG_RED=$(tput setab 1)
+BG_GREEN=$(tput setab 2)
+BG_YELLOW=$(tput setab 3)
+BG_BLUE=$(tput setab 4)
+BG_MAGENTA=$(tput setab 5)
+BG_CYAN=$(tput setab 6)
+BG_WHITE=$(tput setab 7)
 
-# Header Section
-echo "${CYAN}${BOLD}╔════════════════════════════════════════════════════════╗${RESET}"
-echo "${CYAN}${BOLD}        WELCOME TO DR ABHISHEK CLOUD TUTORIAL              ${RESET}"
-echo "${CYAN}${BOLD}╚════════════════════════════════════════════════════════╝${RESET}"
+BOLD=$(tput bold)
+RESET=$(tput sgr0)
+
+spinner() {
+    local pid=$!
+    local delay=0.1
+    local spinstr='|/-\'
+    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+        local temp=${spinstr#?}
+        printf " [%c]  " "$spinstr"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b"
+    done
+    printf "    \b\b\b\b"
+}
+
+# Function to validate input
+validate_input() {
+    local input=$1
+    local name=$2
+    if [[ -z "$input" ]]; then
+        echo "${RED}${BOLD}Error: $name cannot be empty${RESET}"
+        exit 1
+    fi
+}
+
+# Clear screen and display header
+clear
 echo
-echo "${MAGENTA}${BOLD}          Expert Tutorial by Dr. Abhishek              ${RESET}"
-echo "${YELLOW}For more GCP tutorials, visit: ${UNDERLINE}https://www.youtube.com/@drabhishek.5460${RESET}"
-echo
-echo "${BLUE}${BOLD}⚡ Initializing Load Balancer Configuration...${RESET}"
-echo
-
-# User Input Section
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ INPUT PARAMETERS ▬▬▬▬▬▬▬▬▬${RESET}"
-read -p "${YELLOW}${BOLD}Enter ZONE (e.g., us-central1-a): ${RESET}" ZONE
-read -p "${YELLOW}${BOLD}Enter your Project ID: ${RESET}" DEVSHELL_PROJECT_ID
-
-echo
-echo "${CYAN}Configuration Parameters:${RESET}"
-echo "${WHITE}Zone: ${BOLD}$ZONE${RESET}"
-echo "${WHITE}Project ID: ${BOLD}$DEVSHELL_PROJECT_ID${RESET}"
-echo
-
-# Instance Creation
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ INSTANCE CREATION ▬▬▬▬▬▬▬▬▬${RESET}"
-
-echo "${YELLOW}Creating blue instance...${RESET}"
-gcloud compute instances create blue \
-  --project=$DEVSHELL_PROJECT_ID \
-  --zone=$ZONE \
-  --machine-type=e2-medium \
-  --network-interface=network-tier=PREMIUM,stack-type=IPV4_ONLY,subnet=default \
-  --metadata=enable-oslogin=true \
-  --maintenance-policy=MIGRATE \
-  --provisioning-model=STANDARD \
-  --tags=web-server,http-server \
-  --create-disk=auto-delete=yes,boot=yes,device-name=blue,image=projects/debian-cloud/global/images/debian-11-bullseye-v20230509,mode=rw,size=10,type=projects/$DEVSHELL_PROJECT_ID/zones/$ZONE/diskTypes/pd-balanced \
-  --no-shielded-secure-boot \
-  --shielded-vtpm \
-  --shielded-integrity-monitoring \
-  --labels=goog-ec-src=vm_add-gcloud \
-  --reservation-affinity=any
-echo "${GREEN}✅ Blue instance created!${RESET}"
-
-echo "${YELLOW}Creating green instance...${RESET}"
-gcloud compute instances create green \
-  --project=$DEVSHELL_PROJECT_ID \
-  --zone=$ZONE \
-  --machine-type=e2-medium \
-  --network-interface=network-tier=PREMIUM,stack-type=IPV4_ONLY,subnet=default \
-  --metadata=enable-oslogin=true \
-  --maintenance-policy=MIGRATE \
-  --provisioning-model=STANDARD \
-  --create-disk=auto-delete=yes,boot=yes,device-name=blue,image=projects/debian-cloud/global/images/debian-11-bullseye-v20230509,mode=rw,size=10,type=projects/$DEVSHELL_PROJECT_ID/zones/$ZONE/diskTypes/pd-balanced \
-  --no-shielded-secure-boot \
-  --shielded-vtpm \
-  --shielded-integrity-monitoring \
-  --labels=goog-ec-src=vm_add-gcloud \
-  --reservation-affinity=any
-echo "${GREEN}✅ Green instance created!${RESET}"
-
-echo "${YELLOW}Creating test-vm instance...${RESET}"
-gcloud compute instances create test-vm \
-  --machine-type=f1-micro \
-  --subnet=default \
-  --zone=$ZONE
-echo "${GREEN}✅ Test VM created!${RESET}"
+echo "${BG_MAGENTA}${BOLD} WELCOME TO DR ABHISHEK CLOUD TUTORIALS ${RESET}"
 echo
 
-# Firewall Configuration
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ FIREWALL SETUP ▬▬▬▬▬▬▬▬▬${RESET}"
+# Set project ID
+export DEVSHELL_PROJECT_ID=$(gcloud config get-value project)
+echo "${GREEN}${BOLD}✔ Project ID: ${CYAN}$DEVSHELL_PROJECT_ID${RESET}"
 
-echo "${YELLOW}Creating firewall rule for web servers...${RESET}"
-gcloud compute --project=$DEVSHELL_PROJECT_ID firewall-rules create allow-http-web-server \
-  --direction=INGRESS \
-  --priority=1000 \
-  --network=default \
-  --action=ALLOW \
-  --rules=tcp:80,icmp \
-  --source-ranges=0.0.0.0/0 \
-  --target-tags=web-server
-echo "${GREEN}✅ Firewall rule created!${RESET}"
+# Zone selection
+echo
+echo "${YELLOW}${BOLD}Please select a zone:${RESET}"
+ZONES=$(gcloud compute zones list --format="value(name)")
+select ZONE in $ZONES; do
+    validate_input "$ZONE" "Zone"
+    break
+done
+export ZONE
+echo "${GREEN}${BOLD}✔ Selected Zone: ${CYAN}$ZONE${RESET}"
 echo
 
-# IAM Configuration
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ IAM CONFIGURATION ▬▬▬▬▬▬▬▬▬${RESET}"
+# Create VMs
+echo "${BLUE}${BOLD}▐▓▒▌ STEP 1: CREATING VM INSTANCES ${RESET}"
+echo
+echo -n "${CYAN}${BOLD}🖥️ Creating blue instance..."
+(gcloud compute instances create blue \
+    --project=$DEVSHELL_PROJECT_ID \
+    --zone=$ZONE \
+    --machine-type=e2-medium \
+    --network-interface=network-tier=PREMIUM,stack-type=IPV4_ONLY,subnet=default \
+    --metadata=enable-oslogin=true \
+    --maintenance-policy=MIGRATE \
+    --provisioning-model=STANDARD \
+    --tags=web-server,http-server \
+    --create-disk=auto-delete=yes,boot=yes,device-name=blue,image=projects/debian-cloud/global/images/debian-11-bullseye-v20230509,mode=rw,size=10,type=projects/$DEVSHELL_PROJECT_ID/zones/$ZONE/diskTypes/pd-balanced \
+    --no-shielded-secure-boot \
+    --shielded-vtpm \
+    --shielded-integrity-monitoring \
+    --labels=goog-ec-src=vm_add-gcloud \
+    --reservation-affinity=any > /dev/null 2>&1) &
+spinner
+echo -e "\r${GREEN}${BOLD}✔ Blue instance created!          ${RESET}"
 
-echo "${YELLOW}Creating network-admin service account...${RESET}"
-gcloud iam service-accounts create network-admin \
-  --description="Service account for Network Admin role" \
-  --display-name="Network-admin"
-echo "${GREEN}✅ Service account created!${RESET}"
+echo -n "${CYAN}${BOLD}🖥️ Creating green instance..."
+(gcloud compute instances create green \
+    --project=$DEVSHELL_PROJECT_ID \
+    --zone=$ZONE \
+    --machine-type=e2-medium \
+    --network-interface=network-tier=PREMIUM,stack-type=IPV4_ONLY,subnet=default \
+    --metadata=enable-oslogin=true \
+    --maintenance-policy=MIGRATE \
+    --provisioning-model=STANDARD \
+    --tags=web-server \
+    --create-disk=auto-delete=yes,boot=yes,device-name=green,image=projects/debian-cloud/global/images/debian-11-bullseye-v20230509,mode=rw,size=10,type=projects/$DEVSHELL_PROJECT_ID/zones/$ZONE/diskTypes/pd-balanced \
+    --no-shielded-secure-boot \
+    --shielded-vtpm \
+    --shielded-integrity-monitoring \
+    --labels=goog-ec-src=vm_add-gcloud \
+    --reservation-affinity=any > /dev/null 2>&1) &
+spinner
+echo -e "\r${GREEN}${BOLD}✔ Green instance created!          ${RESET}"
 
-echo "${YELLOW}Assigning Network Admin role...${RESET}"
-gcloud projects add-iam-policy-binding $DEVSHELL_PROJECT_ID \
-  --member=serviceAccount:network-admin@$DEVSHELL_PROJECT_ID.iam.gserviceaccount.com \
-  --role=roles/compute.networkAdmin
-echo "${GREEN}✅ Role assigned!${RESET}"
+echo -n "${CYAN}${BOLD}🖥️ Creating test instance..."
+(gcloud compute instances create test-vm \
+    --machine-type=f1-micro \
+    --subnet=default \
+    --zone=$ZONE > /dev/null 2>&1) &
+spinner
+echo -e "\r${GREEN}${BOLD}✔ Test instance created!          ${RESET}"
 
-echo "${YELLOW}Creating service account key...${RESET}"
-gcloud iam service-accounts keys create credentials.json \
-  --iam-account=network-admin@$DEVSHELL_PROJECT_ID.iam.gserviceaccount.com
-echo "${GREEN}✅ Service account key created!${RESET}"
+# Firewall rule
+echo -n "${CYAN}${BOLD}🛡️ Creating firewall rule..."
+(gcloud compute firewall-rules create allow-http-web-server \
+    --project=$DEVSHELL_PROJECT_ID \
+    --direction=INGRESS \
+    --priority=1000 \
+    --network=default \
+    --action=ALLOW \
+    --rules=tcp:80,icmp \
+    --source-ranges=0.0.0.0/0 \
+    --target-tags=web-server > /dev/null 2>&1) &
+spinner
+echo -e "\r${GREEN}${BOLD}✔ Firewall rule created!          ${RESET}"
 echo
 
-# Web Server Configuration
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ WEB SERVER SETUP ▬▬▬▬▬▬▬▬▬${RESET}"
+# Service account setup
+echo "${BLUE}${BOLD}▐▓▒▌ STEP 2: SERVICE ACCOUNT SETUP ${RESET}"
+echo
+echo -n "${CYAN}${BOLD}👤 Creating network admin service account..."
+(gcloud iam service-accounts create network-admin \
+    --description="Service account for Network Admin role" \
+    --display-name="Network-admin" > /dev/null 2>&1) &
+spinner
+echo -e "\r${GREEN}${BOLD}✔ Service account created!          ${RESET}"
 
-echo "${YELLOW}Preparing blue server configuration script...${RESET}"
+echo -n "${CYAN}${BOLD}🔑 Assigning network admin role..."
+(gcloud projects add-iam-policy-binding $DEVSHELL_PROJECT_ID \
+    --member="serviceAccount:network-admin@$DEVSHELL_PROJECT_ID.iam.gserviceaccount.com" \
+    --role="roles/compute.networkAdmin" > /dev/null 2>&1) &
+spinner
+echo -e "\r${GREEN}${BOLD}✔ Role assigned!          ${RESET}"
+
+echo -n "${CYAN}${BOLD}📄 Creating service account key..."
+(gcloud iam service-accounts keys create credentials.json \
+    --iam-account="network-admin@$DEVSHELL_PROJECT_ID.iam.gserviceaccount.com" > /dev/null 2>&1) &
+spinner
+echo -e "\r${GREEN}${BOLD}✔ Key file created: credentials.json          ${RESET}"
+echo
+
+# Configure web servers
+echo "${BLUE}${BOLD}▐▓▒▌ STEP 3: WEB SERVER CONFIGURATION ${RESET}"
+echo
+# Blue server configuration
+echo -n "${CYAN}${BOLD}🔵 Configuring blue server..."
 cat > bluessh.sh <<'EOF_END'
-#!/bin/bash
-sudo apt-get update
-sudo apt-get install nginx-light -y
+sudo apt-get update && sudo apt-get install nginx-light -y
 sudo sed -i "14c\<h1>Welcome to the blue server!</h1>" /var/www/html/index.nginx-debian.html
 EOF_END
-echo "${GREEN}✅ Blue server script prepared!${RESET}"
 
-echo "${YELLOW}Transferring script to blue instance...${RESET}"
-gcloud compute scp bluessh.sh blue:/tmp \
-  --project=$DEVSHELL_PROJECT_ID \
-  --zone=$ZONE \
-  --quiet
-echo "${GREEN}✅ Script transferred!${RESET}"
-
-echo "${YELLOW}Executing configuration on blue instance...${RESET}"
+(gcloud compute scp bluessh.sh blue:/tmp \
+    --project=$DEVSHELL_PROJECT_ID \
+    --zone=$ZONE \
+    --quiet > /dev/null 2>&1 && \
 gcloud compute ssh blue \
-  --project=$DEVSHELL_PROJECT_ID \
-  --zone=$ZONE \
-  --quiet \
-  --command="bash /tmp/bluessh.sh" \
-  --ssh-flag="-o ConnectTimeout=60"
-echo "${GREEN}✅ Blue server configured!${RESET}"
-echo
+    --project=$DEVSHELL_PROJECT_ID \
+    --zone=$ZONE \
+    --quiet \
+    --command="bash /tmp/bluessh.sh" \
+    --ssh-flag="-o ConnectTimeout=60" > /dev/null 2>&1) &
+spinner
+echo -e "\r${GREEN}${BOLD}✔ Blue server configured!          ${RESET}"
 
-echo "${YELLOW}Preparing green server configuration script...${RESET}"
+# Green server configuration
+echo -n "${CYAN}${BOLD}🟢 Configuring green server..."
 cat > greenssh.sh <<'EOF_END'
-#!/bin/bash
-sudo apt-get update
-sudo apt-get install nginx-light -y
+sudo apt-get update && sudo apt-get install nginx-light -y
 sudo sed -i "14c\<h1>Welcome to the green server!</h1>" /var/www/html/index.nginx-debian.html
 EOF_END
-echo "${GREEN}✅ Green server script prepared!${RESET}"
 
-echo "${YELLOW}Transferring script to green instance...${RESET}"
-gcloud compute scp greenssh.sh green:/tmp \
-  --project=$DEVSHELL_PROJECT_ID \
-  --zone=$ZONE \
-  --quiet
-echo "${GREEN}✅ Script transferred!${RESET}"
-
-echo "${YELLOW}Executing configuration on green instance...${RESET}"
+(gcloud compute scp greenssh.sh green:/tmp \
+    --project=$DEVSHELL_PROJECT_ID \
+    --zone=$ZONE \
+    --quiet > /dev/null 2>&1 && \
 gcloud compute ssh green \
-  --project=$DEVSHELL_PROJECT_ID \
-  --zone=$ZONE \
-  --quiet \
-  --command="bash /tmp/greenssh.sh"
-echo "${GREEN}✅ Green server configured!${RESET}"
-echo
+    --project=$DEVSHELL_PROJECT_ID \
+    --zone=$ZONE \
+    --quiet \
+    --command="bash /tmp/greenssh.sh" \
+    --ssh-flag="-o ConnectTimeout=60" > /dev/null 2>&1) &
+spinner
+echo -e "\r${GREEN}${BOLD}✔ Green server configured!          ${RESET}"
+
+# Get instance IPs
+BLUE_IP=$(gcloud compute instances describe blue --zone=$ZONE --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
+GREEN_IP=$(gcloud compute instances describe green --zone=$ZONE --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
 
 # Completion Message
-echo "${GREEN}${BOLD}╔════════════════════════════════════════════════════════╗${RESET}"
-echo "${GREEN}${BOLD}          LAB COMPLETED!                 ${RESET}"
-echo "${GREEN}${BOLD}╚════════════════════════════════════════════════════════╝${RESET}"
 echo
-echo "${RED}${BOLD}🙏 Special thanks to Dr. Abhishek for this tutorial!${RESET}"
-echo "${YELLOW}${BOLD}📺 Subscribe for more GCP content:${RESET}"
-echo "${BLUE}${UNDERLINE}https://www.youtube.com/@drabhishek.5460${RESET}"
+echo "${BG_GREEN}${BLACK}${BOLD} BLUE-GREEN DEPLOYMENT SETUP COMPLETE! ${RESET}"
 echo
-echo "${MAGENTA}${BOLD}🚀 Your blue-green deployment is ready for testing!${RESET}"
+echo "${GREEN}${BOLD}✔ Blue Server IP: ${CYAN}$BLUE_IP${RESET}"
+echo "${GREEN}${BOLD}✔ Green Server IP: ${CYAN}$GREEN_IP${RESET}"
+echo
+echo "${YELLOW}${BOLD}You can now access your servers:"
+echo "  Blue server: ${CYAN}http://$BLUE_IP${RESET}"
+echo "  Green server: ${CYAN}http://$GREEN_IP${RESET}"
+echo
+echo "${MAGENTA}${BOLD}For more cloud tutorials, visit:"
+echo "${CYAN}https://www.youtube.com/@drabhishek.5460/${RESET}"
+echo
+
+# Cleanup
+rm -f bluessh.sh greenssh.sh
