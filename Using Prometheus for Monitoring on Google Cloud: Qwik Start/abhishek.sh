@@ -1,7 +1,14 @@
 #!/bin/bash
+# Google Cloud Monitoring & Prometheus Lab
+# Expertly crafted by Dr. Abhishek Cloud
 
-# Color setup
-BLACK=$(tput setaf 0)
+
+# ======================
+BOLD=$(tput bold)
+UNDERLINE=$(tput smul)
+RESET=$(tput sgr0)
+
+# Text Colors
 RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
 YELLOW=$(tput setaf 3)
@@ -10,96 +17,183 @@ MAGENTA=$(tput setaf 5)
 CYAN=$(tput setaf 6)
 WHITE=$(tput setaf 7)
 
-BOLD=$(tput bold)
-RESET=$(tput sgr0)
+# Background Colors
+BG_RED=$(tput setab 1)
+BG_GREEN=$(tput setab 2)
+BG_YELLOW=$(tput setab 3)
+BG_BLUE=$(tput setab 4)
+BG_MAGENTA=$(tput setab 5)
+BG_CYAN=$(tput setab 6)
 
+# Random color selection
+COLORS=($RED $GREEN $YELLOW $BLUE $MAGENTA $CYAN)
+RAND_COLOR=${COLORS[$RANDOM % ${#COLORS[@]}]}
+
+
+# ======================
 clear
+echo "${BG_BLUE}${BOLD}${WHITE}==================================================${RESET}"
+echo "${BG_BLUE}${BOLD}${WHITE}   WELCOME TO DR ABHISHEK CLOUD TUTORIALS     ${RESET}"
+echo "${BG_BLUE}${BOLD}${WHITE}==================================================${RESET}"
+echo ""
+echo "${CYAN}${BOLD}⚡ Expertly crafted by Dr. Abhishek Cloud${RESET}"
+echo "${YELLOW}${BOLD}📺 YouTube: ${UNDERLINE}https://www.youtube.com/@drabhishek.5460/videos${RESET}"
+echo ""
 
-# Banner function
-function show_banner() {
-    echo "${BLUE}${BOLD}╔══════════════════════════════════════════════════╗${RESET}"
-    echo "${BLUE}${BOLD}║  GOOGLE CLOUD MONITORING PROMETHEUS TUTORIAL  ║${RESET}"
-    echo "${BLUE}${BOLD}║            by Dr. Abhishek                       ║${RESET}"
-    echo "${BLUE}${BOLD}╚══════════════════════════════════════════════════╝${RESET}"
-    echo
-    echo "${GREEN}For more cloud tutorials, subscribe to:${RESET}"
-    echo "${CYAN}${BOLD}https://www.youtube.com/@drabhishek.5460/videos${RESET}"
-    echo "${YELLOW}──────────────────────────────────────────────${RESET}"
-    echo
+# ======================
+#  INITIAL SETUP
+# ======================
+echo "${RAND_COLOR}${BOLD}🚀 Starting Execution${RESET}"
+
+# Step 1: Set Compute Zone & Region
+echo "${BOLD}${BLUE}🌍 STEP 1: Setting Compute Zone & Region${RESET}"
+export ZONE=$(gcloud compute project-info describe \
+    --format="value(commonInstanceMetadata.items[google-compute-default-zone])")
+export REGION=$(gcloud compute project-info describe \
+    --format="value(commonInstanceMetadata.items[google-compute-default-region])")
+
+echo "${WHITE}Configured Zone: ${YELLOW}$ZONE${RESET}"
+echo "${WHITE}Configured Region: ${YELLOW}$REGION${RESET}"
+echo ""
+
+# ======================
+#  ARTIFACT REGISTRY
+# ======================
+echo "${BOLD}${GREEN}🐳 STEP 2: Creating Docker Artifact Registry${RESET}"
+gcloud artifacts repositories create docker-repo \
+    --repository-format=docker \
+    --location=$REGION \
+    --description="Docker repository" \
+    --project=$DEVSHELL_PROJECT_ID || {
+    echo "${RED}${BOLD}❌ Failed to create Artifact Registry${RESET}"
+    exit 1
+}
+echo "${GREEN}✔ Artifact Registry created successfully${RESET}"
+echo ""
+
+# ======================
+#  APPLICATION SETUP
+# ======================
+echo "${BOLD}${CYAN}📦 STEP 3: Downloading Flask Telemetry App${RESET}"
+wget -q https://storage.googleapis.com/spls/gsp1024/flask_telemetry.zip || {
+    echo "${RED}${BOLD}❌ Failed to download Flask app${RESET}"
+    exit 1
+}
+unzip -q flask_telemetry.zip
+echo "${GREEN}✔ Application downloaded and extracted${RESET}"
+echo ""
+
+# ======================
+#  DOCKER OPERATIONS
+# ======================
+echo "${BOLD}${YELLOW}🐋 STEP 4: Loading Docker Image${RESET}"
+docker load -i flask_telemetry.tar || {
+    echo "${RED}${BOLD}❌ Failed to load Docker image${RESET}"
+    exit 1
 }
 
-show_banner
+echo "${BOLD}${MAGENTA}🏷️ STEP 5: Tagging Docker Image${RESET}"
+docker tag gcr.io/ops-demo-330920/flask_telemetry:61a2a7aabc7077ef474eb24f4b69faeab47deed9 \
+    $REGION-docker.pkg.dev/$DEVSHELL_PROJECT_ID/docker-repo/flask-telemetry:v1 || {
+    echo "${RED}${BOLD}❌ Failed to tag Docker image${RESET}"
+    exit 1
+}
 
-# User input section
-echo "${MAGENTA}${BOLD}Please enter the following configuration:${RESET}"
-read -p "${YELLOW}${BOLD}Enter ZONE (e.g., us-central1-a): ${RESET}" ZONE
-echo
+echo "${BOLD}${RED}📤 STEP 6: Pushing Docker Image to Artifact Registry${RESET}"
+docker push $REGION-docker.pkg.dev/$DEVSHELL_PROJECT_ID/docker-repo/flask-telemetry:v1 || {
+    echo "${RED}${BOLD}❌ Failed to push Docker image${RESET}"
+    exit 1
+}
+echo "${GREEN}✔ Docker operations completed successfully${RESET}"
+echo ""
 
-# Cluster creation
-echo "${BLUE}${BOLD}Creating GKE cluster with Managed Prometheus...${RESET}"
+# ======================
+#  GKE CLUSTER SETUP
+# ======================
+echo "${BOLD}${GREEN}☸️ STEP 7: Creating GKE Cluster with Prometheus Monitoring${RESET}"
 gcloud beta container clusters create gmp-cluster \
     --num-nodes=1 \
     --zone $ZONE \
-    --enable-managed-prometheus && \
-echo "${GREEN}✓ Cluster created successfully${RESET}" || \
-echo "${RED}✗ Failed to create cluster${RESET}"
-echo
+    --enable-managed-prometheus || {
+    echo "${RED}${BOLD}❌ Failed to create GKE cluster${RESET}"
+    exit 1
+}
 
-# Get cluster credentials
-echo "${BLUE}${BOLD}Getting cluster credentials...${RESET}"
-gcloud container clusters get-credentials gmp-cluster --zone $ZONE && \
-echo "${GREEN}✓ Credentials configured successfully${RESET}" || \
-echo "${RED}✗ Failed to get credentials${RESET}"
-echo
+echo "${BOLD}${CYAN}🔑 STEP 8: Getting GKE Credentials${RESET}"
+gcloud container clusters get-credentials gmp-cluster --zone $ZONE || {
+    echo "${RED}${BOLD}❌ Failed to get cluster credentials${RESET}"
+    exit 1
+}
+echo "${GREEN}✔ GKE cluster setup complete${RESET}"
+echo ""
 
-# Create namespace
-echo "${BLUE}${BOLD}Creating gmp-test namespace...${RESET}"
-kubectl create ns gmp-test && \
-echo "${GREEN}✓ Namespace created successfully${RESET}" || \
-echo "${RED}✗ Failed to create namespace${RESET}"
-echo
+# ======================
+#  KUBERNETES DEPLOYMENT
+# ======================
+echo "${BOLD}${YELLOW}📦 STEP 9: Creating Kubernetes Namespace${RESET}"
+kubectl create ns gmp-test || {
+    echo "${RED}${BOLD}❌ Failed to create namespace${RESET}"
+    exit 1
+}
 
-# Deploy Flask application
-echo "${BLUE}${BOLD}Deploying Flask application...${RESET}"
-kubectl -n gmp-test apply -f https://raw.githubusercontent.com/kyleabenson/flask_telemetry/master/gmp_prom_setup/flask_deployment.yaml && \
-kubectl -n gmp-test apply -f https://raw.githubusercontent.com/kyleabenson/flask_telemetry/master/gmp_prom_setup/flask_service.yaml && \
-echo "${GREEN}✓ Flask application deployed successfully${RESET}" || \
-echo "${RED}✗ Failed to deploy Flask application${RESET}"
-echo
+echo "${BOLD}${MAGENTA}📥 STEP 10: Downloading Prometheus Setup Files${RESET}"
+wget -q https://storage.googleapis.com/spls/gsp1024/gmp_prom_setup.zip || {
+    echo "${RED}${BOLD}❌ Failed to download Prometheus setup${RESET}"
+    exit 1
+}
+unzip -q gmp_prom_setup.zip
+cd gmp_prom_setup || {
+    echo "${RED}${BOLD}❌ Failed to enter setup directory${RESET}"
+    exit 1
+}
 
-# Get service URL
-echo "${BLUE}${BOLD}Getting service endpoint...${RESET}"
+echo "${BOLD}${BLUE}✏️ STEP 11: Configuring Deployment YAML${RESET}"
+sed -i "s|<ARTIFACT REGISTRY IMAGE NAME>|$REGION-docker.pkg.dev/$DEVSHELL_PROJECT_ID/docker-repo/flask-telemetry:v1|g" flask_deployment.yaml || {
+    echo "${RED}${BOLD}❌ Failed to configure deployment${RESET}"
+    exit 1
+}
+
+echo "${BOLD}${GREEN}🚀 STEP 12: Deploying Flask Application${RESET}"
+kubectl -n gmp-test apply -f flask_deployment.yaml || {
+    echo "${RED}${BOLD}❌ Failed to deploy Flask application${RESET}"
+    exit 1
+}
+
+echo "${BOLD}${CYAN}🔌 STEP 13: Exposing Flask Service${RESET}"
+kubectl -n gmp-test apply -f flask_service.yaml || {
+    echo "${RED}${BOLD}❌ Failed to create service${RESET}"
+    exit 1
+}
+
+echo "${BOLD}${YELLOW}🌐 STEP 14: Retrieving LoadBalancer IP${RESET}"
 url=$(kubectl get services -n gmp-test -o jsonpath='{.items[*].status.loadBalancer.ingress[0].ip}')
-echo "${CYAN}Service URL: ${WHITE}http://$url${RESET}"
-echo
+echo "${WHITE}Service URL: ${YELLOW}$url${RESET}"
 
-# Test metrics endpoint
-echo "${BLUE}${BOLD}Testing metrics endpoint...${RESET}"
-curl -s $url/metrics | head -n 5 && \
-echo "${GREEN}✓ Metrics endpoint is working${RESET}" || \
-echo "${RED}✗ Failed to access metrics endpoint${RESET}"
-echo
+echo "${BOLD}${MAGENTA}📊 STEP 15: Testing /metrics Endpoint${RESET}"
+curl -s $url/metrics | head -n 10
+echo "${WHITE}... (output truncated)${RESET}"
+echo "${GREEN}✔ Metrics endpoint is working${RESET}"
+echo ""
 
-# Deploy Prometheus
-echo "${BLUE}${BOLD}Deploying Prometheus...${RESET}"
-kubectl -n gmp-test apply -f https://raw.githubusercontent.com/kyleabenson/flask_telemetry/master/gmp_prom_setup/prom_deploy.yaml && \
-echo "${GREEN}✓ Prometheus deployed successfully${RESET}" || \
-echo "${RED}✗ Failed to deploy Prometheus${RESET}"
-echo
+# ======================
+#  PROMETHEUS DEPLOYMENT
+# ======================
+echo "${BOLD}${RED}📈 STEP 16: Deploying Prometheus Configuration${RESET}"
+kubectl -n gmp-test apply -f prom_deploy.yaml || {
+    echo "${RED}${BOLD}❌ Failed to deploy Prometheus${RESET}"
+    exit 1
+}
 
-# Generate traffic
-echo "${BLUE}${BOLD}Generating test traffic (2 minutes)...${RESET}"
-echo "${YELLOW}This will run for 2 minutes to generate metrics${RESET}"
-timeout 120 bash -c -- 'while true; do 
-    curl -s $(kubectl get services -n gmp-test -o jsonpath='{.items[*].status.loadBalancer.ingress[0].ip}') >/dev/null
-    sleep $((RANDOM % 4))
-done' && \
-echo "${GREEN}✓ Traffic generation completed${RESET}" || \
-echo "${YELLOW}⚠ Traffic generation stopped${RESET}"
-echo
+echo "${BOLD}${BLUE}📡 STEP 17: Generating Test Traffic (2 minutes)${RESET}"
+echo "${WHITE}Generating random traffic to application...${RESET}"
+timeout 120 bash -c -- 'while true; do curl -s $(kubectl get services -n gmp-test -o jsonpath='{.items[*].status.loadBalancer.ingress[0].ip}') >/dev/null; sleep $((RANDOM % 4)); done' &
+echo "${GREEN}✔ Traffic generation started in background${RESET}"
+echo ""
 
-# Create dashboard
-echo "${BLUE}${BOLD}Creating monitoring dashboard...${RESET}"
+# ======================
+#  MONITORING DASHBOARD
+# ======================
+echo "${BOLD}${GREEN}📊 STEP 18: Creating Monitoring Dashboard${RESET}"
 gcloud monitoring dashboards create --config='''
 {
   "category": "CUSTOM",
@@ -156,20 +250,32 @@ gcloud monitoring dashboards create --config='''
     ]
   }
 }
-''' && \
-echo "${GREEN}✓ Dashboard created successfully${RESET}" || \
-echo "${RED}✗ Failed to create dashboard${RESET}"
-echo
+''' || {
+    echo "${YELLOW}⚠️ Dashboard may have already existed${RESET}"
+}
+echo "${GREEN}✔ Dashboard created successfully${RESET}"
+echo ""
 
-# Completion message
-echo "${GREEN}${BOLD}╔════════════════════════════════════════════╗${RESET}"
-echo "${GREEN}${BOLD}║          LAB COMPLETED SUCCESSFULLY       ║${RESET}"
-echo "${GREEN}${BOLD}╚════════════════════════════════════════════╝${RESET}"
-echo
-echo "${WHITE}${BOLD}Next steps:${RESET}"
-echo "${CYAN}- Check your metrics in Cloud Monitoring Console:"
-echo "  https://console.cloud.google.com/monitoring/dashboards${RESET}"
-echo "${CYAN}- For more tutorials, subscribe to:"
-echo "  https://www.youtube.com/@drabhishek.5460/videos${RESET}"
-echo
-echo "${BLUE}Happy monitoring with Google Cloud!${RESET}"
+# ======================
+#  COMPLETION MESSAGE
+# ======================
+echo "${BG_GREEN}${BOLD}${WHITE}==================================================${RESET}"
+echo "${BG_GREEN}${BOLD}${WHITE}       LAB COMPLETED SUCCESSFULLY!               ${RESET}"
+echo "${BG_GREEN}${BOLD}${WHITE}==================================================${RESET}"
+echo ""
+echo "${WHITE}${BOLD}🔍 Access your resources:${RESET}"
+echo "${YELLOW}GKE Cluster: https://console.cloud.google.com/kubernetes/list?project=$DEVSHELL_PROJECT_ID${RESET}"
+echo "${YELLOW}Monitoring: https://console.cloud.google.com/monitoring/dashboards?project=$DEVSHELL_PROJECT_ID${RESET}"
+echo "${YELLOW}Artifact Registry: https://console.cloud.google.com/artifacts?project=$DEVSHELL_PROJECT_ID${RESET}"
+echo ""
+echo "${CYAN}${BOLD}💡 For more Google Cloud labs and tutorials:${RESET}"
+echo "${YELLOW}${BOLD}👉 ${UNDERLINE}https://www.youtube.com/@drabhishek.5460/videos${RESET}"
+echo "${GREEN}${BOLD}🔔 Don't forget to subscribe for daily cloud tutorials!${RESET}"
+echo ""
+
+# Clean up temporary files
+echo "${BOLD}${BLUE}🧹 Cleaning up temporary files...${RESET}"
+cd ..
+rm -rf flask_telemetry* gmp_prom_setup*
+echo "${GREEN}✔ Cleanup complete${RESET}"
+
