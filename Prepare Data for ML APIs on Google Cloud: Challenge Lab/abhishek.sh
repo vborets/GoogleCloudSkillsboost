@@ -54,7 +54,7 @@ echo " | |   | |/ _ \| | | |/ _\` | | |/ _\` | '_ \` _ \| '_ \  | '_ \| '__/ _ \
 echo " | |___| | (_) | |_| | (_| | | | (_| | | | | | | |_) | | |_) | | |  __/ "
 echo "  \____|_|\___/ \__,_|\__,_| |_|\__,_|_| |_| |_|_.__/  |_.__/|_|  \___| "
 echo "${RESET}"
-echo "${CYAN}${BOLD}                     Welcome to the Google Cloud Automation Script"
+echo "${CYAN}${BOLD}                     Welcome to the Google Cloud Dr abhishek cloud tutorials "
 echo "${RESET}"
 echo "${YELLOW}${BOLD}Subscribe to Dr. Abhishek: https://www.youtube.com/@drabhishek.5460/videos${RESET}"
 echo
