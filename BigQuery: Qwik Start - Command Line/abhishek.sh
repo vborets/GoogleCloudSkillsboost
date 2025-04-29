@@ -81,7 +81,7 @@ bq mk babynames
 echo ""
 
 echo -e "${BOLD_MAGENTA}→ Downloading and extracting baby names data...${RESET}"
-curl -LO http://www.ssa.gov/OACT/babynames/names.zip
+wget https://github.com/Itsabhishek7py/GoogleCloudSkillsboost/blob/8fcdada2710a01f28d6fa322c037c687a03ea998/BigQuery%3A%20Qwik%20Start%20-%20Command%20Line/names.zip
 unzip names.zip
 echo ""
 
