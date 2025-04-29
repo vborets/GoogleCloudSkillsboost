@@ -81,7 +81,9 @@ bq mk babynames
 echo ""
 
 echo -e "${BOLD_MAGENTA}→ Downloading and extracting baby names data...${RESET}"
+
 wget https://github.com/Itsabhishek7py/GoogleCloudSkillsboost/raw/refs/heads/main/BigQuery:%20Qwik%20Start%20-%20Command%20Line/names.zip
+
 unzip names.zip
 echo ""
 
