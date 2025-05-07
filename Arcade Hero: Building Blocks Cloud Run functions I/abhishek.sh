@@ -22,8 +22,10 @@ export PROJECT_ID=$(gcloud config get-value project)
 
 # First Cloud Function - HTTP Trigger (Go)
 echo -e "${CYAN}${BOLD}Configuring first Cloud Function (HTTP Trigger - Go)...${RESET}"
-read -p "Enter region for first function (e.g., us-central1): " REGION1
-read -p "Enter Cloud Function name (e.g., cf-http-go): " FUNCTION_NAME1
+read -p "Enter region for first function [default: us-central1]: " REGION1
+REGION1=${REGION1:-us-central1}
+read -p "Enter Cloud Function name [default: cf-http-go]: " FUNCTION_NAME1
+FUNCTION_NAME1=${FUNCTION_NAME1:-cf-http-go}
 
 # Step 2: Create source code for the first Cloud Function
 echo -e "${YELLOW}${BOLD}Creating sample Go HTTP function...${RESET}"
@@ -40,7 +42,6 @@ func HelloHTTP(w http.ResponseWriter, r *http.Request) {
 }
 EOF
 
-# Create go.mod file for HTTP function
 cat > cloud-function-http-go/go.mod <<EOF
 module cloudfunction
 
@@ -60,13 +61,13 @@ gcloud functions deploy ${FUNCTION_NAME1} \
   --allow-unauthenticated
 
 echo -e "${GREEN}${BOLD}First deployment complete!${RESET}"
-echo -e "\n"  # Adding one blank line
+echo -e "\n"
 
 # Second Cloud Function - Cloud Storage Trigger (Go)
 echo -e "${CYAN}${BOLD}Configuring second Cloud Function (Cloud Storage Trigger - Go)...${RESET}"
-read -p "Enter region for second function (default: us-central1): " REGION2
+read -p "Enter region for second function [default: us-central1]: " REGION2
 REGION2=${REGION2:-us-central1}
-read -p "Enter Cloud Function name (default: cf-gcs): " FUNCTION_NAME2
+read -p "Enter Cloud Function name [default: cf-gcs]: " FUNCTION_NAME2
 FUNCTION_NAME2=${FUNCTION_NAME2:-cf-gcs}
 
 # Step 4: Create source code for the second Cloud Function
@@ -82,15 +83,13 @@ import (
 	"cloud.google.com/go/functions/metadata"
 )
 
-// GCSEvent is the payload of a GCS event.
 type GCSEvent struct {
-	Bucket         string `json:"bucket"`
-	Name           string `json:"name"`
-	Metageneration string `json:"metageneration"`
-	ResourceState  string `json:"resourceState"`
+	Bucket         string \`json:"bucket"\`
+	Name           string \`json:"name"\`
+	Metageneration string \`json:"metageneration"\`
+	ResourceState  string \`json:"resourceState"\`
 }
 
-// HelloGCS consumes a GCS event.
 func HelloGCS(ctx context.Context, e GCSEvent) error {
 	meta, err := metadata.FromContext(ctx)
 	if err != nil {
@@ -106,7 +105,6 @@ func HelloGCS(ctx context.Context, e GCSEvent) error {
 }
 EOF
 
-# Create go.mod file for GCS function
 cat > cloud-function-gcs-go/go.mod <<EOF
 module cloudfunction
 
@@ -127,9 +125,9 @@ gcloud functions deploy ${FUNCTION_NAME2} \
   --max-instances=5
 
 echo -e "${GREEN}${BOLD}Second deployment complete!${RESET}"
-echo -e "\n"  # Adding one blank line
+echo -e "\n"
 
-# Remove unwanted files from home directory
+# Clean up unwanted files in home directory
 cd ~
 remove_files() {
   for file in *; do
