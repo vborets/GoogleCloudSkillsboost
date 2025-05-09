@@ -14,6 +14,7 @@
 ```
 export ZONE=
 ```
+```
 curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Hosting%20a%20Web%20App%20on%20Google%20Cloud%20Using%20Compute%20Engine%20-%20Azure/abhishek1.sh
 sudo chmod +x abhishek1.sh
 ./abhishek1.sh
