@@ -16,10 +16,18 @@ curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost
 sudo chmod +x abhishek.sh
 ./abhishek.sh
 ```
-### Congratulations !!!!
 
-Connect with fellow cloud enthusiasts, ask questions, and share your learning journey.  
 
-[![Telegram](https://img.shields.io/badge/Telegram_Group-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/+gBcgRTlZLyM4OGI1)  
-[![YouTube](https://img.shields.io/badge/Subscribe-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@drabhishek.5460?sub_confirmation=1)  
-[![Instagram](https://img.shields.io/badge/Follow-%23E4405F?style=for-the-badge&logo=instagram&logoColor=white)](https://www.instagram.com/drabhishek.5460/) 
+<div align="center">
+  
+# Congratulations !!!!
+
+Connect with fellow cloud enthusiasts, ask questions, and share your learning journey.
+
+[![Join Telegram Group](https://img.shields.io/badge/-Join%20Telegram%20Group-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white&labelColor=2CA5E0)](https://t.me/+gBcgRTlZLyM4OGI1)  
+[![Subscribe on YouTube](https://img.shields.io/badge/-Subscribe%20on%20YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white&labelColor=FF0000)](https://www.youtube.com/@drabhishek.5460?sub_confirmation=1)  
+[![Follow on Instagram](https://img.shields.io/badge/-Follow%20on%20Instagram-E4405F?style=for-the-badge&logo=instagram&logoColor=white&labelColor=E4405F)](https://www.instagram.com/drabhishek.5460/)
+
+*Let's grow together in the cloud computing world!*
+
+</div>
