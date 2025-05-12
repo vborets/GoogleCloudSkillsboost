@@ -58,7 +58,7 @@ gcloud functions deploy ${FUNCTION_NAME1} \
   --trigger-http \
   --max-instances=5 \
   --allow-unauthenticated
-
+## Copy KArlo aakhir tum bhi to mere bete ho :D
 echo -e "${GREEN}${BOLD}First deployment complete!${RESET}"
 echo -e "\n"
 
