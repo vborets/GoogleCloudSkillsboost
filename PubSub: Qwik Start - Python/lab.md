@@ -1,6 +1,5 @@
 ### Pub/Sub: Qwik Start - Python
 
-## Arcade Hero: Building Blocks Artifact Registry II
 
 
 
