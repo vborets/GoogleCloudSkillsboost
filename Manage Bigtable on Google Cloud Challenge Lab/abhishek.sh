@@ -1,27 +1,22 @@
 #!/bin/bash
-# Define color variables with improved formatting
-BLACK=$(tput setaf 0)
-RED=$(tput setaf 1)
-GREEN=$(tput setaf 2)
-YELLOW=$(tput setaf 3)
-BLUE=$(tput setaf 4)
-MAGENTA=$(tput setaf 5)
-CYAN=$(tput setaf 6)
-WHITE=$(tput setaf 7)
+# Color definitions
+BLUE=$'\033[0;94m'
+GREEN=$'\033[0;92m'
+YELLOW=$'\033[0;93m'
+RED=$'\033[0;91m'
+BOLD=$'\033[1m'
+RESET=$'\033[0m'
 
-BG_BLACK=$(tput setab 0)
-BG_RED=$(tput setab 1)
-BG_GREEN=$(tput setab 2)
-BG_YELLOW=$(tput setab 3)
-BG_BLUE=$(tput setab 4)
-BG_MAGENTA=$(tput setab 5)
-BG_CYAN=$(tput setab 6)
-BG_WHITE=$(tput setab 7)
+# Function to display section headers
+section() {
+    echo ""
+    echo "${BLUE}${BOLD}============================================${RESET}"
+    echo "${BLUE}${BOLD}$1${RESET}"
+    echo "${BLUE}${BOLD}============================================${RESET}"
+    echo ""
+}
 
-BOLD=$(tput bold)
-RESET=$(tput sgr0)
-
-# Spinner function
+# Function to show a spinner while commands run
 spinner() {
     local pid=$!
     local delay=0.1
@@ -36,158 +31,116 @@ spinner() {
     printf "    \b\b\b\b"
 }
 
-# Progress bar function
-progress_bar() {
-    local duration=${1}
-    local columns=$(tput cols)
-    local space=$((columns-20))
-    printf "${BLUE}${BOLD}Progress: ["
-    for ((i=0; i<space; i++)); do printf " "; done
-    printf "]${RESET}\r"
-    printf "${BLUE}${BOLD}Progress: ["
-    for ((i=0; i<space; i++)); do
-        printf "${GREEN}${BOLD}#${RESET}"
-        sleep $duration
-    done
-    printf "]${RESET}\n"
-}
-
-# Header function
-header() {
-    clear
-    echo "${BG_MAGENTA}${BOLD}${WHITE}============================================${RESET}"
-    echo "${BG_MAGENTA}${BOLD}${WHITE}  Dr. Abhishek's Cloud Bigtable Lab         ${RESET}"
-    echo "${BG_MAGENTA}${BOLD}${WHITE}============================================${RESET}"
-    echo
-}
-
 # Welcome message
-welcome() {
-    header
-    echo "${CYAN}${BOLD}Welcome to Dr abhishek cloud tutorials !${RESET}"
-    echo "${YELLOW}Subscribe to my channel: https://www.youtube.com/@drabhishek.5460${RESET}"
-    echo
-    echo "${GREEN}${BOLD}Starting execution in 3 seconds...${RESET}"
-    sleep 3
-}
+echo ""
+echo "${GREEN}${BOLD}🚀 Welcome to Dr Abhishek Cloud Tutorials 🚀${RESET}"
+echo ""
 
-#----------------------------------------------------start--------------------------------------------------#
-welcome
+# Get zone inputs
+echo "${YELLOW}${BOLD}Please enter your preferred zones:${RESET}"
+echo ""
+read -p "ENTER ZONE 1 (e.g., us-central1-a): " ZONE
+echo ""
+echo "${YELLOW}${BOLD}Note: ZONE 2 must be different from ZONE 1${RESET}"
+read -p "ENTER ZONE 2 (e.g., us-central1-b): " ZONE_2
 
-echo "${BG_MAGENTA}${BOLD}${WHITE}=== INITIAL SETUP ===${RESET}"
+# Set region from zone
 export REGION="${ZONE%-*}"
 
-echo "${YELLOW}${BOLD}Configuring Dataflow service...${RESET}"
-(gcloud services disable dataflow.googleapis.com >/dev/null 2>&1) & spinner
-(gcloud services enable dataflow.googleapis.com >/dev/null 2>&1) & spinner
-echo "${GREEN}${BOLD}✓ Dataflow service configured${RESET}"
+section "1. Configuring Dataflow Service"
+echo "${YELLOW}Reconfiguring Dataflow service...${RESET}"
+(gcloud services disable dataflow.googleapis.com > /dev/null 2>&1; \
+ gcloud services enable dataflow.googleapis.com > /dev/null 2>&1) & spinner
+echo "${GREEN}✅ Dataflow service configured${RESET}"
 
-echo "${YELLOW}${BOLD}Creating Bigtable instance...${RESET}"
+section "2. Creating Bigtable Instance"
+echo "${YELLOW}Creating ecommerce-recommendations instance...${RESET}"
 (gcloud bigtable instances create ecommerce-recommendations \
   --display-name=ecommerce-recommendations \
   --cluster-storage-type=SSD \
-  --cluster-config="id=ecommerce-recommendations-c1,zone=$ZONE" >/dev/null 2>&1) & spinner
-echo "${GREEN}${BOLD}✓ Bigtable instance created${RESET}"
+  --cluster-config="id=ecommerce-recommendations-c1,zone=$ZONE" > /dev/null 2>&1) & spinner
+echo "${GREEN}✅ Bigtable instance created${RESET}"
 
-echo "${YELLOW}${BOLD}Configuring autoscaling for cluster...${RESET}"
+section "3. Configuring Cluster Autoscaling"
+echo "${YELLOW}Updating cluster autoscaling settings...${RESET}"
 (gcloud bigtable clusters update ecommerce-recommendations-c1 \
     --instance=ecommerce-recommendations \
     --autoscaling-max-nodes=5 \
     --autoscaling-min-nodes=1 \
-    --autoscaling-cpu-target=60 >/dev/null 2>&1) & spinner
-echo "${GREEN}${BOLD}✓ Autoscaling configured${RESET}"
+    --autoscaling-cpu-target=60 > /dev/null 2>&1) & spinner
+echo "${GREEN}✅ Autoscaling configured${RESET}"
 
-echo "${YELLOW}${BOLD}Creating storage bucket...${RESET}"
-(gsutil mb gs://$DEVSHELL_PROJECT_ID >/dev/null 2>&1) & spinner
-echo "${GREEN}${BOLD}✓ Storage bucket created${RESET}"
+section "4. Creating Storage Bucket"
+echo "${YELLOW}Creating storage bucket...${RESET}"
+(gsutil mb gs://$DEVSHELL_PROJECT_ID > /dev/null 2>&1) & spinner
+echo "${GREEN}✅ Storage bucket created${RESET}"
 
-echo "${YELLOW}${BOLD}Creating Bigtable tables...${RESET}"
+section "5. Creating Bigtable Tables"
+echo "${YELLOW}Creating SessionHistory table...${RESET}"
 (gcloud bigtable instances tables create SessionHistory \
     --instance=ecommerce-recommendations \
     --project=$DEVSHELL_PROJECT_ID \
-    --column-families=Engagements,Sales >/dev/null 2>&1) & spinner
+    --column-families=Engagements,Sales > /dev/null 2>&1) & spinner
 
+echo "${YELLOW}Creating PersonalizedProducts table...${RESET}"
 (gcloud bigtable instances tables create PersonalizedProducts \
     --instance=ecommerce-recommendations \
     --project=$DEVSHELL_PROJECT_ID \
-    --column-families=Recommendations >/dev/null 2>&1) & spinner
-echo "${GREEN}${BOLD}✓ Tables created${RESET}"
+    --column-families=Recommendations > /dev/null 2>&1) & spinner
+echo "${GREEN}✅ Tables created successfully${RESET}"
 
-echo "${BG_MAGENTA}${BOLD}${WHITE}=== DATA IMPORT ===${RESET}"
-echo "${YELLOW}${BOLD}Importing session data...${RESET}"
-(gcloud dataflow jobs run import-sessions --gcs-location gs://dataflow-templates-$REGION/latest/GCS_SequenceFile_to_Cloud_Bigtable --region $REGION --staging-location gs://$DEVSHELL_PROJECT_ID/temp --parameters bigtableProject=$DEVSHELL_PROJECT_ID,bigtableInstanceId=ecommerce-recommendations,bigtableTableId=SessionHistory,sourcePattern=gs://cloud-training/OCBL377/retail-engagements-sales-00000-of-00001,mutationThrottleLatencyMs=0 >/dev/null 2>&1) & spinner
-echo "${GREEN}${BOLD}✓ Session data imported${RESET}"
+section "6. Importing Data to Bigtable"
+echo "${YELLOW}Importing session data...${RESET}"
+(gcloud dataflow jobs run import-sessions --gcs-location gs://dataflow-templates-$REGION/latest/GCS_SequenceFile_to_Cloud_Bigtable --region $REGION --staging-location gs://$DEVSHELL_PROJECT_ID/temp --parameters bigtableProject=$DEVSHELL_PROJECT_ID,bigtableInstanceId=ecommerce-recommendations,bigtableTableId=SessionHistory,sourcePattern=gs://cloud-training/OCBL377/retail-engagements-sales-00000-of-00001,mutationThrottleLatencyMs=0 > /dev/null 2>&1) & spinner
 
-echo "${YELLOW}${BOLD}Importing recommendations data...${RESET}"
-(gcloud dataflow jobs run import-recommendations --gcs-location gs://dataflow-templates-$REGION/latest/GCS_SequenceFile_to_Cloud_Bigtable --region $REGION --staging-location gs://$DEVSHELL_PROJECT_ID/temp --parameters bigtableProject=$DEVSHELL_PROJECT_ID,bigtableInstanceId=ecommerce-recommendations,bigtableTableId=PersonalizedProducts,sourcePattern=gs://cloud-training/OCBL377/retail-recommendations-00000-of-00001 >/dev/null 2>&1) & spinner
-echo "${GREEN}${BOLD}✓ Recommendations data imported${RESET}"
+echo "${YELLOW}Importing recommendation data...${RESET}"
+(gcloud dataflow jobs run import-recommendations --gcs-location gs://dataflow-templates-$REGION/latest/GCS_SequenceFile_to_Cloud_Bigtable --region $REGION --staging-location gs://$DEVSHELL_PROJECT_ID/temp --parameters bigtableProject=$DEVSHELL_PROJECT_ID,bigtableInstanceId=ecommerce-recommendations,bigtableTableId=PersonalizedProducts,sourcePattern=gs://cloud-training/OCBL377/retail-recommendations-00000-of-00001 > /dev/null 2>&1) & spinner
+echo "${GREEN}✅ Data import completed${RESET}"
 
-echo "${BG_MAGENTA}${BOLD}${WHITE}=== CLUSTER EXPANSION ===${RESET}"
-echo "${YELLOW}${BOLD}Creating second cluster...${RESET}"
+section "7. Creating Second Cluster"
+echo "${YELLOW}Creating second cluster in zone $ZONE_2...${RESET}"
 (gcloud bigtable clusters create ecommerce-recommendations-c2 \
     --instance=ecommerce-recommendations \
-    --zone=$ZONE2 >/dev/null 2>&1) & spinner
-echo "${GREEN}${BOLD}✓ Second cluster created${RESET}"
+    --zone=$ZONE_2 > /dev/null 2>&1) & spinner
 
-echo "${YELLOW}${BOLD}Configuring autoscaling for second cluster...${RESET}"
+echo "${YELLOW}Configuring autoscaling for second cluster...${RESET}"
 (gcloud bigtable clusters update ecommerce-recommendations-c2 \
     --instance=ecommerce-recommendations \
     --autoscaling-max-nodes=5 \
     --autoscaling-min-nodes=1 \
-    --autoscaling-cpu-target=60 >/dev/null 2>&1) & spinner
-echo "${GREEN}${BOLD}✓ Second cluster autoscaling configured${RESET}"
+    --autoscaling-cpu-target=60 > /dev/null 2>&1) & spinner
+echo "${GREEN}✅ Second cluster configured${RESET}"
 
-echo "${BG_MAGENTA}${BOLD}${WHITE}=== BACKUP OPERATIONS ===${RESET}"
-echo "${YELLOW}${BOLD}Creating backup...${RESET}"
+section "8. Creating and Restoring Backup"
+echo "${YELLOW}Creating backup of PersonalizedProducts table...${RESET}"
 (gcloud bigtable backups create PersonalizedProducts_7 --instance=ecommerce-recommendations \
   --cluster=ecommerce-recommendations-c1 \
   --table=PersonalizedProducts \
-  --retention-period=7d >/dev/null 2>&1) & spinner
-echo "${GREEN}${BOLD}✓ Backup created${RESET}"
+  --retention-period=7d > /dev/null 2>&1) & spinner
 
-echo "${YELLOW}${BOLD}Restoring backup...${RESET}"
+echo "${YELLOW}Restoring backup to new table...${RESET}"
 (gcloud bigtable instances tables restore \
 --source=projects/$DEVSHELL_PROJECT_ID/instances/ecommerce-recommendations/clusters/ecommerce-recommendations-c1/backups/PersonalizedProducts_7 \
 --async \
 --destination=PersonalizedProducts_7_restored \
 --destination-instance=ecommerce-recommendations \
---project=$DEVSHELL_PROJECT_ID >/dev/null 2>&1) & spinner
-echo "${GREEN}${BOLD}✓ Backup restore initiated${RESET}"
+--project=$DEVSHELL_PROJECT_ID > /dev/null 2>&1) & spinner
 
-echo "${YELLOW}${BOLD}Waiting for operations to complete...${RESET}"
-progress_bar 0.1
+echo "${YELLOW}Waiting for restore to complete...${RESET}"
+sleep 100
+echo "${GREEN}✅ Backup restored successfully${RESET}"
 
-echo "${BG_MAGENTA}${BOLD}${WHITE}=== FINAL DATA IMPORT ===${RESET}"
-echo "${YELLOW}${BOLD}Re-importing session data...${RESET}"
-(gcloud dataflow jobs run import-sessions --gcs-location gs://dataflow-templates-$REGION/latest/GCS_SequenceFile_to_Cloud_Bigtable --region $REGION --staging-location gs://$DEVSHELL_PROJECT_ID/temp --parameters bigtableProject=$DEVSHELL_PROJECT_ID,bigtableInstanceId=ecommerce-recommendations,bigtableTableId=SessionHistory,sourcePattern=gs://cloud-training/OCBL377/retail-engagements-sales-00000-of-00001,mutationThrottleLatencyMs=0 >/dev/null 2>&1) & spinner
-echo "${GREEN}${BOLD}✓ Session data re-imported${RESET}"
+section "9. Final Data Import"
+echo "${YELLOW}Running final data imports...${RESET}"
+(gcloud dataflow jobs run import-sessions --gcs-location gs://dataflow-templates-$REGION/latest/GCS_SequenceFile_to_Cloud_Bigtable --region $REGION --staging-location gs://$DEVSHELL_PROJECT_ID/temp --parameters bigtableProject=$DEVSHELL_PROJECT_ID,bigtableInstanceId=ecommerce-recommendations,bigtableTableId=SessionHistory,sourcePattern=gs://cloud-training/OCBL377/retail-engagements-sales-00000-of-00001,mutationThrottleLatencyMs=0 > /dev/null 2>&1) & spinner
 
-echo "${YELLOW}${BOLD}Re-importing recommendations data...${RESET}"
-(gcloud dataflow jobs run import-recommendations --gcs-location gs://dataflow-templates-$REGION/latest/GCS_SequenceFile_to_Cloud_Bigtable --region $REGION --staging-location gs://$DEVSHELL_PROJECT_ID/temp --parameters bigtableProject=$DEVSHELL_PROJECT_ID,bigtableInstanceId=ecommerce-recommendations,bigtableTableId=PersonalizedProducts,sourcePattern=gs://cloud-training/OCBL377/retail-recommendations-00000-of-00001 >/dev/null 2>&1) & spinner
-echo "${GREEN}${BOLD}✓ Recommendations data re-imported${RESET}"
+(gcloud dataflow jobs run import-recommendations --gcs-location gs://dataflow-templates-$REGION/latest/GCS_SequenceFile_to_Cloud_Bigtable --region $REGION --staging-location gs://$DEVSHELL_PROJECT_ID/temp --parameters bigtableProject=$DEVSHELL_PROJECT_ID,bigtableInstanceId=ecommerce-recommendations,bigtableTableId=PersonalizedProducts,sourcePattern=gs://cloud-training/OCBL377/retail-recommendations-00000-of-00001 > /dev/null 2>&1) & spinner
+echo "${GREEN}✅ Final data imports completed${RESET}"
 
-echo "${YELLOW}${BOLD}NOW${RESET}" "${WHITE}${BOLD}Check The Score${RESET}" "${GREEN}${BOLD}Upto Task 4${RESET}"
-
-echo "${YELLOW}${BOLD}Final cleanup operations...${RESET}"
-progress_bar 0.05
-
-echo "${YELLOW}${BOLD}Deleting backup...${RESET}"
-(gcloud bigtable backups delete PersonalizedProducts_7 --instance=ecommerce-recommendations \
-  --cluster=ecommerce-recommendations-c1 --quiet >/dev/null 2>&1) & spinner
-echo "${GREEN}${BOLD}✓ Backup deleted${RESET}"
-
-echo "${YELLOW}${BOLD}Deleting Bigtable instance...${RESET}"
-(gcloud bigtable instances delete ecommerce-recommendations --quiet >/dev/null 2>&1) & spinner
-echo "${GREEN}${BOLD}✓ Bigtable instance deleted${RESET}"
-
-# Final message
-echo
-echo "${BG_RED}${BOLD}${WHITE}============================================${RESET}"
-echo "${BG_RED}${BOLD}${WHITE}  Congratulations For Completing The Lab!  ${RESET}"
-echo "${BG_RED}${BOLD}${WHITE}============================================${RESET}"
-echo
-echo "${CYAN}${BOLD}Don't forget to subscribe to my channel:${RESET}"
-echo "${YELLOW}${BOLD}https://www.youtube.com/@drabhishek.5460${RESET}"
-echo
-
-#-----------------------------------------------------end----------------------------------------------------------#
+# Completion message
+echo ""
+echo "${GREEN}${BOLD}🎉 Now Follow Video Carefully! 🎉${RESET}"
+echo ""
+echo "${BOLD}You can monitor your Dataflow jobs at:${RESET}"
+echo -e "${BLUE}${BOLD}https://console.cloud.google.com/dataflow/jobs?referrer=search&project=${DEVSHELL_PROJECT_ID}${RESET}"
+echo ""
