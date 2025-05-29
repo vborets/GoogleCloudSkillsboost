@@ -100,6 +100,9 @@ explore: events {
     relationship: many_to_one
   }
 }
+
+
+
 ```
 ## 🎉 **Congratulations! Lab Completed Successfully!** 🏆  
 
