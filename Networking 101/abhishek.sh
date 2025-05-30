@@ -55,69 +55,36 @@ echo
 # Start execution
 echo "${BG_MAGENTA}${BOLD}Starting Network Configuration${RESET}"
 
-# Network Creation
-section_header "Creating Custom Network"
-echo "${BLUE}${BOLD}Creating taw-custom-network...${RESET}"
-(gcloud compute networks create taw-custom-network --subnet-mode custom > /dev/null 2>&1) & spinner
-echo "${GREEN}✓ Network created successfully${RESET}"
 
-# Subnet Creation
-section_header "Creating Subnets"
-echo "${BLUE}${BOLD}Creating subnets in specified regions...${RESET}"
+gcloud compute networks create taw-custom-network --subnet-mode custom
 
-echo "${YELLOW}Creating subnet-$REGION_1...${RESET}"
-(gcloud compute networks subnets create subnet-$REGION_1 \
+gcloud compute networks subnets create subnet-$REGION_1 \
    --network taw-custom-network \
    --region $REGION_1 \
-   --range 10.0.0.0/16 > /dev/null 2>&1) & spinner
-echo "${GREEN}✓ subnet-$REGION_1 created${RESET}"
+   --range 10.0.0.0/16
 
-echo "${YELLOW}Creating subnet-$REGION_2...${RESET}"
-(gcloud compute networks subnets create subnet-$REGION_2 \
+gcloud compute networks subnets create subnet-$REGION_2 \
    --network taw-custom-network \
    --region $REGION_2 \
-   --range 10.1.0.0/16 > /dev/null 2>&1) & spinner
-echo "${GREEN}✓ subnet-$REGION_2 created${RESET}"
+   --range 10.1.0.0/16
 
-echo "${YELLOW}Creating subnet-$REGION_3...${RESET}"
-(gcloud compute networks subnets create subnet-$REGION_3 \
+gcloud compute networks subnets create subnet-$REGION_3 \
    --network taw-custom-network \
    --region $REGION_3 \
-   --range 10.2.0.0/16 > /dev/null 2>&1) & spinner
-echo "${GREEN}✓ subnet-$REGION_3 created${RESET}"
+   --range 10.2.0.0/16
 
-# Firewall Rules
-section_header "Configuring Firewall Rules"
-echo "${BLUE}${BOLD}Setting up firewall rules...${RESET}"
 
-echo "${YELLOW}Creating HTTP rule...${RESET}"
-(gcloud compute firewall-rules create nw101-allow-http \
+gcloud compute firewall-rules create nw101-allow-http \
 --allow tcp:80 --network taw-custom-network --source-ranges 0.0.0.0/0 \
---target-tags http > /dev/null 2>&1) & spinner
-echo "${GREEN}✓ HTTP rule created${RESET}"
+--target-tags http
 
-echo "${YELLOW}Creating ICMP rule...${RESET}"
-(gcloud compute firewall-rules create "nw101-allow-icmp" \
---allow icmp --network "taw-custom-network" --source-ranges 0.0.0.0/0 \
---target-tags rules > /dev/null 2>&1) & spinner
-echo "${GREEN}✓ ICMP rule created${RESET}"
+gcloud compute firewall-rules create "nw101-allow-icmp" --allow icmp --network "taw-custom-network" --target-tags rules
 
-echo "${YELLOW}Creating internal traffic rule...${RESET}"
-(gcloud compute firewall-rules create "nw101-allow-internal" \
---allow tcp:0-65535,udp:0-65535,icmp --network "taw-custom-network" \
---source-ranges "10.0.0.0/16","10.2.0.0/16","10.1.0.0/16" > /dev/null 2>&1) & spinner
-echo "${GREEN}✓ Internal traffic rule created${RESET}"
+gcloud compute firewall-rules create "nw101-allow-internal" --allow tcp:0-65535,udp:0-65535,icmp --network "taw-custom-network" --source-ranges "10.0.0.0/16","10.2.0.0/16","10.1.0.0/16"
 
-echo "${YELLOW}Creating SSH rule...${RESET}"
-(gcloud compute firewall-rules create "nw101-allow-ssh" \
---allow tcp:22 --network "taw-custom-network" --target-tags "ssh" > /dev/null 2>&1) & spinner
-echo "${GREEN}✓ SSH rule created${RESET}"
+gcloud compute firewall-rules create "nw101-allow-ssh" --allow tcp:22 --network "taw-custom-network" --target-tags "ssh"
 
-echo "${YELLOW}Creating RDP rule...${RESET}"
-(gcloud compute firewall-rules create "nw101-allow-rdp" \
---allow tcp:3389 --network "taw-custom-network" > /dev/null 2>&1) & spinner
-echo "${GREEN}✓ RDP rule created${RESET}"
-
+gcloud compute firewall-rules create "nw101-allow-rdp" --allow tcp:3389 --network "taw-custom-network"
 # Completion message
 section_header "Lab Completed Successfully!"
 echo "${BG_GREEN}${BOLD}${BLACK}Congratulations on completing Dr. Abhishek's Network Lab!${RESET}"
