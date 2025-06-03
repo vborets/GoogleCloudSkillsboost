@@ -8,7 +8,8 @@
 <a href="https://www.cloudskillsboost.google/focuses/21217?catalog_rank=%7B%22rank%22%3A1%2C%22num_filters%22%3A0%2C%22has_search%22%3Atrue%7D&parent=catalog&search_id=46519940" target="_blank" style="margin: 10px;">
   <img src="https://img.shields.io/badge/Access_Lab-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white" alt="Access Lab">
 </a>
-
+<br/>
+</div>
 ### 📊 Step 1: Update the `user` View
 
 Modify the `user` view with the following configuration:
