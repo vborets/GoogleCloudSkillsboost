@@ -16,8 +16,15 @@ RESET_FORMAT=$'\033[0m'
 clear
 
 echo
+echo "${CYAN_TEXT}${BOLD_TEXT}===============================================${RESET_FORMAT}"
+echo "${CYAN_TEXT}${BOLD_TEXT}   WELCOME TO DR. ABHISHEK CLOUD ANALYTICS   ${RESET_FORMAT}"
+echo "${CYAN_TEXT}${BOLD_TEXT}===============================================${RESET_FORMAT}"
+echo
+echo "${WHITE_TEXT}${BOLD_TEXT}📺 YouTube Channel: https://www.youtube.com/@drabhishek.5460/videos${RESET_FORMAT}"
+echo
+
 echo "${CYAN_TEXT}${BOLD_TEXT}===================================${RESET_FORMAT}"
-echo "${CYAN_TEXT}${BOLD_TEXT}    Welcome To Dr Abhishek Cloud  ${RESET_FORMAT}"
+echo "${CYAN_TEXT}${BOLD_TEXT}       Let's Do It Together        ${RESET_FORMAT}"
 echo "${CYAN_TEXT}${BOLD_TEXT}===================================${RESET_FORMAT}"
 echo
 
@@ -126,6 +133,6 @@ echo
 gcloud data-catalog tag-templates create new_york_datasets --display-name="New York Datasets" --project=$PROJECT_ID_1 --location=$REGION --field=id=contains_pii,display-name="Contains PII",type='enum(None|Birth date|Gender|Geo location)' --field=id=data_owner_team,display-name="Data Owner Team",type='enum(Marketing|Data Science|Sales|Engineering)',required=TRUE
 
 echo
-echo "${MAGENTA_TEXT}${BOLD_TEXT} CHECK OUT DR. ABHISHEK'S YOUTUBE CHANNEL! 👇${RESET_FORMAT}"
+echo "${MAGENTA_TEXT}${BOLD_TEXT}💖 IF YOU FOUND THIS HELPFUL, PLEASE SUBSCRIBE TO:${RESET_FORMAT}"
 echo "${BLUE_TEXT}${BOLD_TEXT}${UNDERLINE_TEXT}https://www.youtube.com/@drabhishek.5460/videos${RESET_FORMAT}"
 echo
