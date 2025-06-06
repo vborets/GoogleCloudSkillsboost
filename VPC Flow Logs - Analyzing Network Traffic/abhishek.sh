@@ -1,118 +1,89 @@
 #!/bin/bash
-# Colors for output formatting
-BLACK_TEXT=$'\033[0;90m'
-RED_TEXT=$'\033[0;91m'
-GREEN_TEXT=$'\033[0;92m'
-YELLOW_TEXT=$'\033[0;93m'
-BLUE_TEXT=$'\033[0;94m'
-MAGENTA_TEXT=$'\033[0;95m'
-CYAN_TEXT=$'\033[0;96m'
-WHITE_TEXT=$'\033[0;97m'
-DIM_TEXT=$'\033[2m'
-BOLD_TEXT=$'\033[1m'
-UNDERLINE_TEXT=$'\033[4m'
-RESET_FORMAT=$'\033[0m'
 
-clear
 
-# Welcome Banner
-echo
-echo "${CYAN_TEXT}${BOLD_TEXT}===============================================${RESET_FORMAT}"
-echo "${CYAN_TEXT}${BOLD_TEXT}   DR. ABHISHEK CLOUD INFRASTRUCTURE SETUP   ${RESET_FORMAT}"
-echo "${CYAN_TEXT}${BOLD_TEXT}===============================================${RESET_FORMAT}"
-echo
-echo "${WHITE_TEXT}${BOLD_TEXT}📺 YouTube Channel: https://www.youtube.com/@drabhishek.5460${RESET_FORMAT}"
-echo "${WHITE_TEXT}${BOLD_TEXT}👍 Please subscribe for more cloud tutorials!${RESET_FORMAT}"
-echo
+show_banner() {
+    echo -e "\033[0;96m\033[1m"
+    echo "   ____  ____    __  ___   ___  ___  ___  __  __  ____  _  _  ____ "
+    echo "  (  _ \( ___)  /__\( _ ) / __)/ __)/ __)(  )(  )( ___)( \( )(_  _)"
+    echo "   )   / )__)  /(__)) _ \( (__ \__ \\__ \ )(__)(  )__)  )  (   )(  "
+    echo "  (_)\_)(____)(__)(____/ \___)(___/(___/(______)(____)(_)\_) (__) "
+    echo -e "\033[0m"
+    echo -e "\033[0;93m\033[1m          C L O U D   I N F R A S T R U C T U R E   S E T U P\033[0m"
+    echo -e "\033[0;95m\033[1m             YouTube: https://www.youtube.com/@drabhishek.5460\033[0m"
+    echo -e "\033[0;95m\033[1m        ⭐ Please Subscribe for more Cloud Tutorials! ⭐\033[0m"
+    echo
+}
 
-# Set region from zone
+# Spinner Animation
+spinner() {
+    local pid=$!
+    local delay=0.1
+    local spinstr='|/-\'
+    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+        local temp=${spinstr#?}
+        printf " [%c]  " "$spinstr"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b"
+    done
+    printf "    \b\b\b\b"
+}
+
+show_banner
+
+# Original Script Content Starts Here
 export REGION="${ZONE%-*}"
 
-echo "${GREEN_TEXT}${BOLD_TEXT}🛠️ Creating VPC Network...${RESET_FORMAT}"
-gcloud compute networks create vpc-net \
-    --project=$DEVSHELL_PROJECT_ID \
-    --description="Cloud Infrastructure by Dr. Abhishek" \
-    --subnet-mode=custom
+echo -e "\033[1;92m▶ Creating VPC Network...\033[0m"
+gcloud compute networks create vpc-net --project=$DEVSHELL_PROJECT_ID --description="Subscribe to Dr. Abhishek's YouTube Channel" --subnet-mode=custom & spinner
 
-echo "${GREEN_TEXT}${BOLD_TEXT}🌐 Creating Subnet with Flow Logs...${RESET_FORMAT}"
-gcloud compute networks subnets create vpc-subnet \
-    --project=$DEVSHELL_PROJECT_ID \
-    --network=vpc-net \
-    --region=$REGION \
-    --range=10.1.3.0/24 \
-    --enable-flow-logs
+echo -e "\033[1;92m▶ Creating Subnet...\033[0m"
+gcloud compute networks subnets create vpc-subnet --project=$DEVSHELL_PROJECT_ID --network=vpc-net --region=$REGION --range=10.1.3.0/24 --enable-flow-logs & spinner
 
-echo "${YELLOW_TEXT}${BOLD_TEXT}⏳ Waiting for network resources to provision...${RESET_FORMAT}"
-sleep 30
+echo -e "\033[1;93m⏳ Waiting for resources to provision...\033[0m"
+sleep 100 & spinner
 
-echo "${GREEN_TEXT}${BOLD_TEXT}🔥 Configuring Firewall Rules...${RESET_FORMAT}"
-gcloud compute firewall-rules create allow-http-ssh \
-    --project=$DEVSHELL_PROJECT_ID \
-    --direction=INGRESS \
-    --priority=1000 \
-    --network=vpc-net \
-    --action=ALLOW \
-    --rules=tcp:80,tcp:22 \
-    --source-ranges=0.0.0.0/0 \
-    --target-tags=http-server \
-    --description="Allow HTTP/SSH access - Dr. Abhishek Cloud Lab"
+echo -e "\033[1;92m▶ Configuring Firewall Rules...\033[0m"
+gcloud compute --project=$DEVSHELL_PROJECT_ID firewall-rules create allow-http-ssh --direction=INGRESS --priority=1000 --network=vpc-net --action=ALLOW --rules=tcp:80,tcp:22 --source-ranges=0.0.0.0/0 --target-tags=http-server & spinner
 
-echo "${GREEN_TEXT}${BOLD_TEXT}🚀 Launching Web Server Instance...${RESET_FORMAT}"
-gcloud compute instances create web-server \
-    --zone=$ZONE \
-    --project=$DEVSHELL_PROJECT_ID \
-    --machine-type=e2-micro \
-    --subnet=vpc-subnet \
-    --network=vpc-net \
-    --tags=http-server \
-    --image-family=debian-10 \
-    --image-project=debian-cloud \
+echo -e "\033[1;92m▶ Launching Web Server...\033[0m"
+gcloud compute instances create web-server --zone=$ZONE --project=$DEVSHELL_PROJECT_ID --machine-type=e2-micro --subnet=vpc-subnet --network=vpc-net --tags=http-server --image-family=debian-10 --image-project=debian-cloud \
     --metadata=startup-script='#!/bin/bash
-        echo "Installing Apache - Dr. Abhishek Cloud Lab"
         sudo apt update
         sudo apt install apache2 -y
         sudo systemctl start apache2
-        sudo systemctl enable apache2
-        echo "<html><body><h1>Welcome to Dr. Abhishek Cloud Lab</h1></body></html>" | sudo tee /var/www/html/index.html' \
-    --labels=owner=dr-abhishek,environment=lab
+        sudo systemctl enable apache2' \
+    --labels=server=apache & spinner
 
-echo "${GREEN_TEXT}${BOLD_TEXT}🔒 Creating Additional HTTP Firewall Rule...${RESET_FORMAT}"
+echo -e "\033[1;92m▶ Adding HTTP Firewall Rule...\033[0m"
 gcloud compute firewall-rules create allow-http \
-    --project=$DEVSHELL_PROJECT_ID \
     --allow=tcp:80 \
     --source-ranges=0.0.0.0/0 \
     --target-tags=http-server \
-    --description="Allow HTTP traffic - Dr. Abhishek Cloud Lab"
+    --description="Allow HTTP traffic" & spinner
 
-echo "${GREEN_TEXT}${BOLD_TEXT}📊 Creating BigQuery Dataset for Flow Logs...${RESET_FORMAT}"
-bq --project_id=$DEVSHELL_PROJECT_ID mk bq_vpcflows
+echo -e "\033[1;92m▶ Creating BigQuery Dataset...\033[0m"
+bq mk bq_vpcflows & spinner
 
-echo "${YELLOW_TEXT}${BOLD_TEXT}⏳ Waiting for instance to become ready...${RESET_FORMAT}"
-sleep 60
-
-# Get server IP and generate traffic
-CP_IP=$(gcloud compute instances describe web-server \
-    --zone=$ZONE \
-    --project=$DEVSHELL_PROJECT_ID \
-    --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
-
+echo -e "\033[1;92m▶ Getting Server IP...\033[0m"
+CP_IP=$(gcloud compute instances describe web-server --zone=$ZONE --format='get(networkInterfaces[0].accessConfigs[0].natIP)') & spinner
 export MY_SERVER=$CP_IP
 
-echo "${GREEN_TEXT}${BOLD_TEXT}📡 Generating Test Traffic to Server ($MY_SERVER)...${RESET_FORMAT}"
-for ((i=1;i<=20;i++)); do
-    echo "${DIM_TEXT}Request $i: $(curl -s $MY_SERVER)${RESET_FORMAT}"
-    sleep 1
+echo -e "\033[1;92m▶ Generating Test Traffic...\033[0m"
+for ((i=1;i<=50;i++)); do 
+    curl -s $MY_SERVER & 
+    sleep 0.1
 done
-
-# Output useful links
-echo
-echo "${CYAN_TEXT}${BOLD_TEXT}🔗 Useful Links:${RESET_FORMAT}"
-echo "${BLUE_TEXT}${UNDERLINE_TEXT}Firewall Policy: https://console.cloud.google.com/net-security/firewall-manager/firewall-policies/details/allow-http-ssh?project=$DEVSHELL_PROJECT_ID${RESET_FORMAT}"
-echo "${BLUE_TEXT}${UNDERLINE_TEXT}VPC Flow Logs: https://console.cloud.google.com/logs/query;query=resource.type%3D%22gce_subnetwork%22%0Alog_name%3D%22projects%2F$DEVSHELL_PROJECT_ID%2Flogs%2Fcompute.googleapis.com%252Fvpc_flows%22;cursorTimestamp=2024-06-03T07:20:00.734122029Z;duration=PT1H?project=$DEVSHELL_PROJECT_ID${RESET_FORMAT}"
-echo "${BLUE_TEXT}${UNDERLINE_TEXT}VM Instance: https://console.cloud.google.com/compute/instancesDetail/zones/$ZONE/instances/web-server?project=$DEVSHELL_PROJECT_ID${RESET_FORMAT}"
+wait
 
 echo
-echo "${MAGENTA_TEXT}${BOLD_TEXT}🎉 Infrastructure Deployment Complete!${RESET_FORMAT}"
-echo "${WHITE_TEXT}${BOLD_TEXT}💖 Don't forget to subscribe to Dr. Abhishek's YouTube channel:${RESET_FORMAT}"
-echo "${BLUE_TEXT}${BOLD_TEXT}${UNDERLINE_TEXT}https://www.youtube.com/@drabhishek.5460${RESET_FORMAT}"
+echo -e "\033[1;96m🔗 Open Firewall link\033[0m"
+echo "https://console.cloud.google.com/net-security/firewall-manager/firewall-policies/details/allow-http-ssh?project=$DEVSHELL_PROJECT_ID"
+
+echo -e "\033[1;96m🔗 Open Sink link\033[0m"
+echo "https://console.cloud.google.com/logs/query;query=resource.type%3D%22gce_subnetwork%22%0Alog_name%3D%22projects%2F$DEVSHELL_PROJECT_ID%2Flogs%2Fcompute.googleapis.com%252Fvpc_flows%22;cursorTimestamp=2024-06-03T07:20:00.734122029Z;duration=PT1H?project=$DEVSHELL_PROJECT_ID"
+
+echo
+echo -e "\033[1;95m🎉 Setup Complete! Thank you for using Dr. Abhishek YT!\033[0m"
+echo -e "\033[1;95m📺 Don't forget to subscribe: https://www.youtube.com/@drabhishek.5460\033[0m"
 echo
