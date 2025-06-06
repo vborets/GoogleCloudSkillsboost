@@ -10,7 +10,9 @@
 
 
 ### Run the following Commands in CloudShell
-
+```
+export ZONE=
+```
 ```
 curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/VPC%20Flow%20Logs%20-%20Analyzing%20Network%20Traffic/abhishek.sh
 sudo chmod +x abhishek.sh
