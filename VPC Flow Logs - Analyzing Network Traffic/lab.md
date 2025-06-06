@@ -10,13 +10,24 @@
 
 
 ### Run the following Commands in CloudShell
-```
-export ZONE=
-```
+
+
 ```
 curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/VPC%20Flow%20Logs%20-%20Analyzing%20Network%20Traffic/abhishek.sh
 sudo chmod +x abhishek.sh
 ./abhishek.sh
+```
+
+- **Sink Name: vpc-flows**
+
+---
+
+```
+CP_IP=$(gcloud compute instances describe web-server --zone=$ZONE --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
+
+export MY_SERVER=$CP_IP
+
+for ((i=1;i<=50;i++)); do curl $MY_SERVER; done
 ```
 ### Congratulations !!!!
 
