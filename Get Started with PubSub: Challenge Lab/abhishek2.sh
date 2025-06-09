@@ -1,67 +1,61 @@
 #!/bin/bash
-# Define color variables
 
-BLACK=`tput setaf 0`
-RED=`tput setaf 1`
-GREEN=`tput setaf 2`
-YELLOW=`tput setaf 3`
-BLUE=`tput setaf 4`
-MAGENTA=`tput setaf 5`
-CYAN=`tput setaf 6`
-WHITE=`tput setaf 7`
+# Color Definitions
+BLACK_TEXT=$'\033[0;90m'
+RED_TEXT=$'\033[0;91m'
+GREEN_TEXT=$'\033[0;92m'
+YELLOW_TEXT=$'\033[0;93m'
+BLUE_TEXT=$'\033[0;94m'
+MAGENTA_TEXT=$'\033[0;95m'
+CYAN_TEXT=$'\033[0;96m'
+WHITE_TEXT=$'\033[0;97m'
 
-BG_BLACK=`tput setab 0`
-BG_RED=`tput setab 1`
-BG_GREEN=`tput setab 2`
-BG_YELLOW=`tput setab 3`
-BG_BLUE=`tput setab 4`
-BG_MAGENTA=`tput setab 5`
-BG_CYAN=`tput setab 6`
-BG_WHITE=`tput setab 7`
+RESET_FORMAT=$'\033[0m'
+BOLD_TEXT=$'\033[1m'
+UNDERLINE_TEXT=$'\033[4m'
 
-BOLD=`tput bold`
-RESET=`tput sgr0`
+clear
 
-#----------------------------------------------------start--------------------------------------------------#
+echo "${CYAN_TEXT}${BOLD_TEXT}==============================================================${RESET_FORMAT}"
+echo "${MAGENTA_TEXT}${BOLD_TEXT}     🚀 Welcome to Dr Abhishek Cloud Tutorials – GCP Lab      ${RESET_FORMAT}"
+echo "${CYAN_TEXT}${BOLD_TEXT}==============================================================${RESET_FORMAT}"
+echo
 
-echo "${BG_BLUE}${WHITE}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
-echo "${BG_CYAN}${BOLD}        🌟 Welcome to Dr. Abhishek's GCP Guide                         🌟${RESET}"
-echo "${BG_BLUE}${WHITE}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+read -p "${YELLOW_TEXT}${BOLD_TEXT}Enter your GCP region: ${RESET_FORMAT}" LOCATION
+export LOCATION
 
-echo "${BG_GREEN}${BOLD}Initializing Setup... Please Wait.${RESET}"
-
+echo
+echo "${BLUE_TEXT}${BOLD_TEXT}Step 1:${RESET_FORMAT} ${WHITE_TEXT}Creating Pub/Sub schema using Avro format...${RESET_FORMAT}"
+echo
 gcloud pubsub schemas create city-temp-schema \
         --type=avro \
         --definition='{                                             
             "type" : "record",                               
             "name" : "Avro",                                 
             "fields" : [                                     
-            {                                                  
-                "name" : "city",                             
-                "type" : "string"                             
-            },                                               
-            {                                                  
-                "name" : "temperature",                       
-                "type" : "double"                             
-            },                                               
-            {                                                  
-                "name" : "pressure",                          
-                "type" : "int"                                
-            },                                               
-            {                                                  
-                "name" : "time_position",                    
-                "type" : "string"                             
-            }                                                 
+            { "name" : "city", "type" : "string" },           
+            { "name" : "temperature", "type" : "double" },    
+            { "name" : "pressure", "type" : "int" },          
+            { "name" : "time_position", "type" : "string" }   
         ]                                                    
     }'
 
+echo
+echo "${BLUE_TEXT}${BOLD_TEXT}Step 2:${RESET_FORMAT} ${WHITE_TEXT}Creating Pub/Sub topic with JSON message encoding...${RESET_FORMAT}"
+echo
 gcloud pubsub topics create temp-topic \
         --message-encoding=JSON \
         --schema=temperature-schema
 
+echo
+echo "${BLUE_TEXT}${BOLD_TEXT}Step 3:${RESET_FORMAT} ${WHITE_TEXT}Enabling necessary Google Cloud services...${RESET_FORMAT}"
+echo
 gcloud services enable eventarc.googleapis.com
 gcloud services enable run.googleapis.com
 
+echo
+echo "${BLUE_TEXT}${BOLD_TEXT}Step 4:${RESET_FORMAT} ${WHITE_TEXT}Generating Node.js Cloud Function file...${RESET_FORMAT}"
+echo
 cat > index.js <<'EOF_END'
 const functions = require('@google-cloud/functions-framework');
 
@@ -76,6 +70,9 @@ functions.cloudEvent('helloPubSub', cloudEvent => {
 });
 EOF_END
 
+echo
+echo "${BLUE_TEXT}${BOLD_TEXT}Step 5:${RESET_FORMAT} ${WHITE_TEXT}Creating package.json with dependencies...${RESET_FORMAT}"
+echo
 cat > package.json <<'EOF_END'
 {
   "name": "gcf_hello_world",
@@ -91,6 +88,10 @@ cat > package.json <<'EOF_END'
 }
 EOF_END
 
+echo
+echo "${BLUE_TEXT}${BOLD_TEXT}Step 6:${RESET_FORMAT} ${WHITE_TEXT}Deploying the Cloud Function...${RESET_FORMAT}"
+echo
+
 deploy_function() {
 gcloud functions deploy gcf-pubsub \
   --gen2 \
@@ -104,18 +105,22 @@ gcloud functions deploy gcf-pubsub \
 
 deploy_success=false
 
+echo "${CYAN_TEXT}${BOLD_TEXT}Deployment Status:${RESET_FORMAT} ${WHITE_TEXT}Deploying Cloud Function...${RESET_FORMAT}"
 while [ "$deploy_success" = false ]; do
     if deploy_function; then
-        echo "${GREEN}${BOLD}✅ Function deployed successfully...${RESET}"
+        echo "${GREEN_TEXT}${BOLD_TEXT}✅ Success:${RESET_FORMAT} ${WHITE_TEXT}Function deployed successfully!${RESET_FORMAT}"
         deploy_success=true
     else
-        echo "${YELLOW}${BOLD}⚠️ Retrying in 20 seconds...${RESET}"
+        echo "${YELLOW_TEXT}${BOLD_TEXT}⚠️ Retrying:${RESET_FORMAT} ${WHITE_TEXT}Retrying in 20 seconds...${RESET_FORMAT}"
         sleep 20
     fi
 done
 
-echo "${BG_MAGENTA}${BOLD}🎉 Congratulations For Completing The Lab !!!${RESET}"
-echo "${BG_YELLOW}${BLACK}${BOLD}📢 Don't forget to subscribe to Dr. Abhishek's YouTube Channel:${RESET}"
-echo "${BLUE}${BOLD}👉 https://www.youtube.com/@drabhishek.5460/videos${RESET}"
+echo
+echo "${MAGENTA_TEXT}${BOLD_TEXT}==============================================================${RESET_FORMAT}"
+echo "${MAGENTA_TEXT}${BOLD_TEXT}        🎉 LAB COMPLETED SUCCESSFULLY – GREAT JOB!            ${RESET_FORMAT}"
+echo "${MAGENTA_TEXT}${BOLD_TEXT}==============================================================${RESET_FORMAT}"
+echo
 
-#-----------------------------------------------------end----------------------------------------------------------#
+echo -e "${CYAN_TEXT}${BOLD_TEXT}📺 Don’t forget to subscribe to Dr Abhishek on YouTube:${RESET_FORMAT} ${BLUE_TEXT}${UNDERLINE_TEXT}https://www.youtube.com/@drabhishek.5460/videos${RESET_FORMAT}"
+echo
