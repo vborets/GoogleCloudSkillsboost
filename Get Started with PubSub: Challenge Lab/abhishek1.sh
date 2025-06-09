@@ -1,79 +1,55 @@
 #!/bin/bash
 
-
 # Define color variables
-BLACK=`tput setaf 0`
-RED=`tput setaf 1`
-GREEN=`tput setaf 2`
-YELLOW=`tput setaf 3`
-BLUE=`tput setaf 4`
-MAGENTA=`tput setaf 5`
-CYAN=`tput setaf 6`
-WHITE=`tput setaf 7`
+BLACK_TEXT=$'\033[0;90m'
+RED_TEXT=$'\033[0;91m'
+GREEN_TEXT=$'\033[0;92m'
+YELLOW_TEXT=$'\033[0;93m'
+BLUE_TEXT=$'\033[0;94m'
+MAGENTA_TEXT=$'\033[0;95m'
+CYAN_TEXT=$'\033[0;96m'
+WHITE_TEXT=$'\033[0;97m'
 
-BG_BLACK=`tput setab 0`
-BG_RED=`tput setab 1`
-BG_GREEN=`tput setab 2`
-BG_YELLOW=`tput setab 3`
-BG_BLUE=`tput setab 4`
-BG_MAGENTA=`tput setab 5`
-BG_CYAN=`tput setab 6`
-BG_WHITE=`tput setab 7`
+RESET_FORMAT=$'\033[0m'
+BOLD_TEXT=$'\033[1m'
+UNDERLINE_TEXT=$'\033[4m'
 
-BOLD=`tput bold`
-RESET=`tput sgr0`
-
-# Display banner
 clear
-echo "${CYAN}${BOLD}"
-echo "   ____  ____    __  ___   ___  ___  ___  __  __  ____  _  _  ____ "
-echo "  (  _ \( ___)  /__\( _ ) / __)/ __)/ __)(  )(  )( ___)( \( )(_  _)"
-echo "   )   / )__)  /(__)) _ \( (__ \__ \\__ \ )(__)(  )__)  )  (   )(  "
-echo "  (_)\_)(____)(__)(____/ \___)(___/(___/(______)(____)(_)\_) (__) "
-echo "${RESET}"
-echo "${BG_MAGENTA}${BOLD}  DR. ABHISHEK'S CLOUD PUB/SUB form id I ${RESET}"
+
 echo
-echo "${WHITE}📺 YouTube: ${BLUE}https://www.youtube.com/@drabhishek.5460${RESET}"
-echo "${WHITE}⭐ Please Subscribe for More Cloud Tutorials! ⭐${RESET}"
+echo "${MAGENTA_TEXT}${BOLD_TEXT}==============================================================${RESET_FORMAT}"
+echo "${CYAN_TEXT}${BOLD_TEXT}     🚀 Welcome to Dr Abhishek Cloud Tutorials – GCP Lab      ${RESET_FORMAT}"
+echo "${MAGENTA_TEXT}${BOLD_TEXT}==============================================================${RESET_FORMAT}"
 echo
 
-#----------------------------------------------------start--------------------------------------------------#
-
-echo "${GREEN}${BOLD}Step 1: Creating Pub/Sub Subscription${RESET}"
-gcloud pubsub subscriptions create pubsub-subscription-message --topic gcloud-pubsub-topic || {
-    echo "${RED}${BOLD}Error: Failed to create subscription${RESET}"
-    exit 1
-}
-
-echo "${GREEN}${BOLD}Step 2: Publishing Test Message${RESET}"
-gcloud pubsub topics publish gcloud-pubsub-topic --message="Hello from Dr. Abhishek's Lab" || {
-    echo "${RED}${BOLD}Error: Failed to publish message${RESET}"
-    exit 1
-}
-
-echo "${YELLOW}${BOLD}Waiting 10 seconds for message propagation...${RESET}"
-for i in {10..1}; do
-    printf "\r${CYAN}${BOLD}Time remaining: %2d seconds...${RESET}" $i
-    sleep 1
-done
-printf "\n"
-
-echo "${GREEN}${BOLD}Step 3: Retrieving Messages${RESET}"
-gcloud pubsub subscriptions pull pubsub-subscription-message --limit 5 || {
-    echo "${RED}${BOLD}Error: Failed to pull messages${RESET}"
-    exit 1
-}
-
-echo "${GREEN}${BOLD}Step 4: Creating Snapshot${RESET}"
-gcloud pubsub snapshots create pubsub-snapshot --subscription=gcloud-pubsub-subscription || {
-    echo "${RED}${BOLD}Error: Failed to create snapshot${RESET}"
-    exit 1
-}
-
-echo "${BG_RED}${BOLD}Congratulations For Completing The Lab!${RESET}"
+echo "${CYAN_TEXT}${BOLD_TEXT}Step 1:${RESET_FORMAT} ${CYAN_TEXT}Creating a subscription to the topic...${RESET_FORMAT}"
 echo
-echo "${MAGENTA}${BOLD}Don't forget to subscribe to Dr. Abhishek's YouTube channel:${RESET}"
-echo "${BLUE}${BOLD}https://www.youtube.com/@drabhishek.5460${RESET}"
+gcloud pubsub subscriptions create pubsub-subscription-message --topic gcloud-pubsub-topic
+
+echo
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 2:${RESET_FORMAT} ${YELLOW_TEXT}Publishing a message to the topic...${RESET_FORMAT}"
+echo "${YELLOW_TEXT}Sending message: '${BOLD_TEXT}Hello World${RESET_FORMAT}${YELLOW_TEXT}' to all subscriptions.${RESET_FORMAT}"
+echo
+gcloud pubsub topics publish gcloud-pubsub-topic --message="Hello World"
+
+echo
+echo "${MAGENTA_TEXT}${BOLD_TEXT}Waiting:${RESET_FORMAT} ${MAGENTA_TEXT}Allowing some time for processing...${RESET_FORMAT}"
+sleep 10
+
+echo
+echo "${GREEN_TEXT}${BOLD_TEXT}Step 3:${RESET_FORMAT} ${GREEN_TEXT}Pulling messages from the subscription...${RESET_FORMAT}"
+echo "${GREEN_TEXT}Fetching up to ${BOLD_TEXT}5${RESET_FORMAT}${GREEN_TEXT} messages sent to the topic.${RESET_FORMAT}"
+gcloud pubsub subscriptions pull pubsub-subscription-message --limit 5
+
+echo
+echo "${RED_TEXT}${BOLD_TEXT}Step 4:${RESET_FORMAT} ${RED_TEXT}Creating a snapshot of the subscription...${RESET_FORMAT}"
+gcloud pubsub snapshots create pubsub-snapshot --subscription=gcloud-pubsub-subscription
+
+echo
+echo "${BLUE_TEXT}${BOLD_TEXT}==============================================================${RESET_FORMAT}"
+echo "${BLUE_TEXT}${BOLD_TEXT}           ✅ LAB COMPLETED SUCCESSFULLY – WELL DONE!         ${RESET_FORMAT}"
+echo "${BLUE_TEXT}${BOLD_TEXT}==============================================================${RESET_FORMAT}"
 echo
 
-#-----------------------------------------------------end----------------------------------------------------------#
+echo -e "${WHITE_TEXT}${BOLD_TEXT}📺 Follow Dr Abhishek for more Cloud Labs:${RESET_FORMAT} ${CYAN_TEXT}${UNDERLINE_TEXT}https://www.youtube.com/@drabhishek.5460/videos${RESET_FORMAT}"
+echo
