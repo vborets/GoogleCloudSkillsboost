@@ -14,6 +14,10 @@
 
 ## Run the following in cloudshell
 
+```
+export REGION=$(gcloud config get-value compute/region)
+```
+
 ### form 1:
 ---
 * **Task 1. Set up Cloud Pub/Sub.**
