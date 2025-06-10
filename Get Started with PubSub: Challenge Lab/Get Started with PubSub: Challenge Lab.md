@@ -25,9 +25,9 @@ export REGION=$(gcloud config get-value compute/region)
 * **Task 3. Verify the results in Cloud Pub/Sub.**
 
 ````
-curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Get%20Started%20with%20PubSub%3A%20Challenge%20Lab/abhishek1.sh
-sudo chmod +x abhishek1.sh
-./abhishek1.sh
+curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Get%20Started%20with%20PubSub%3A%20Challenge%20Lab/abhishek.sh
+sudo chmod +x abhishek.sh
+./abhishek.sh
 ````
 ### form 2:
 ---
@@ -38,9 +38,9 @@ sudo chmod +x abhishek1.sh
 
 
 ````
-curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Get%20Started%20with%20PubSub%3A%20Challenge%20Lab/abhishek2.sh
-sudo chmod +x abhishek2.sh
-./abhishek2.sh
+curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Get%20Started%20with%20PubSub%3A%20Challenge%20Lab/abhishek.sh
+sudo chmod +x abhishek.sh
+./abhishek.sh
 ````
 ###  form 3:
 ---
@@ -51,9 +51,9 @@ sudo chmod +x abhishek2.sh
 
 
 ````
-curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Get%20Started%20with%20PubSub%3A%20Challenge%20Lab/abhishek3.sh
-sudo chmod +x abhishek3.sh
-./abhishek3.sh
+curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Get%20Started%20with%20PubSub%3A%20Challenge%20Lab/abhishek.sh
+sudo chmod +x abhishek.sh
+./abhishek.sh
 ````
 
 ### Congratulations !!!!
