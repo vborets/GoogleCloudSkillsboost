@@ -116,7 +116,7 @@ EOF_END
         gcloud functions deploy gcf-pubsub \
             --trigger-topic=gcf-topic \
             --runtime=nodejs20 \
-            --no-gen2 \
+            --gen2 \
             --entry-point=helloPubSub \
             --source=. \
             --region=$REGION
