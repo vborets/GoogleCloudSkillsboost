@@ -37,16 +37,21 @@ echo "3) europe-west1-b"
 echo "4) asia-southeast1-a"
 echo "5) Enter custom zone"
 
-read -p "Choose option [1-5]: " zone_choice
+read -p "Choose option [1-5] or type your zone directly: " zone_input
 
-case $zone_choice in
-    1) export ZONE="us-central1-a" ;;
-    2) export ZONE="us-east1-b" ;;
-    3) export ZONE="europe-west1-b" ;;
-    4) export ZONE="asia-southeast1-a" ;;
-    5) read -p "Enter your custom zone (e.g. us-central1-a): " ZONE ;;
-    *) export ZONE="us-central1-a" ;;
-esac
+# Check if the input is a number for menu selection
+if [[ "$zone_input" =~ ^[1-5]$ ]]; then
+    case $zone_input in
+        1) export ZONE="us-central1-a" ;;
+        2) export ZONE="us-east1-b" ;;
+        3) export ZONE="europe-west1-b" ;;
+        4) export ZONE="asia-southeast1-a" ;;
+        5) read -p "Enter your custom zone (e.g. us-central1-a): " ZONE ;;
+    esac
+else
+    # If not a menu number, treat as direct zone input
+    export ZONE="$zone_input"
+fi
 
 echo "${GREEN}Zone set to: ${WHITE}${BOLD}$ZONE${RESET}"
 
