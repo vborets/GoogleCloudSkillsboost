@@ -12,7 +12,9 @@
 
 
 ### Run the following Commands in CloudShell
-
+```
+export ZONE=
+```
 ```
 curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Infrastructure%20as%20Code%20with%20Terraform/abhishek.sh
 sudo chmod +x abhishek.sh
