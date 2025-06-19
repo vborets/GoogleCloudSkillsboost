@@ -12,16 +12,11 @@
 
 ---
 
-### 📋 <ins>**Prerequisites**</ins>
-
-✅ If you do not already have a **GitHub** account, you will need to create a  
-👉 [GitHub account](https://github.com/signup)
 
 ---
 
-## 🛠️ Configuration Steps 🚀
 
-> 💡 **Pro Tip:** *Watch the full video to ensure you achieve full scores on all "Check My Progress" steps!*
+
 
 <div style="padding: 15px; margin: 10px 0;">
 <p><strong>☁️ Run in Cloud Shell:</strong></p>
