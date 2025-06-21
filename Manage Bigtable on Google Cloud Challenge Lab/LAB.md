@@ -11,10 +11,6 @@
 
 ### Run the following Commands in CloudShell
 
-```
-export ZONE=
-export ZONE2=
-```
 `````
 curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Manage%20Bigtable%20on%20Google%20Cloud%20Challenge%20Lab/abhishek.sh
 sudo chmod +x abhishek.sh
