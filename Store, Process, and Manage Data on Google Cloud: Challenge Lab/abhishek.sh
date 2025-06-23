@@ -189,7 +189,7 @@ EOF_END
 deploy_function() {
   gcloud functions deploy $FUNCTION \
     --gen2 \
-    --runtime nodejs20 \
+    --runtime nodejs22 \
     --entry-point $FUNCTION \
     --source . \
     --region $REGION \
