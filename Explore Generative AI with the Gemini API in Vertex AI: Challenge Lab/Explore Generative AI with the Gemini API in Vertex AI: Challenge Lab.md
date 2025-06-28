@@ -10,6 +10,7 @@
 
 
 ### 🚀Run the below commands in Terminal in Jupyter Notebook:
+#### If unable to file files in notebook - https://youtu.be/ISya9_YDSZ0
 
 ```
 rm gemini-explorer-challenge-v2.0.0.ipynb
