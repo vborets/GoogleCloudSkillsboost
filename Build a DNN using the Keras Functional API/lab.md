@@ -1,11 +1,19 @@
 # Build a DNN using the Keras Functional API
 
 
+## 🚀 Step-by-Step Guide
 
+### 🔗 Navigate to **Vertex AI Workbench**
+Start by accessing the Workbench from the following link:
 
-* Navigate to **Workbench** from [here](https://console.cloud.google.com/vertex-ai/workbench/instances?)
+👉 [Open Vertex AI Workbench](https://console.cloud.google.com/vertex-ai/workbench/instances?)
 
-### Run it on jupyter noteboosk 
+---
+
+### 📘 Open Jupyter Notebook (Python 3)
+
+1. Open a **Python 3** notebook.
+2. Paste the following command and click the **Play button** to execute:
 ```
 !git clone https://github.com/GoogleCloudPlatform/training-data-analyst
 ```
