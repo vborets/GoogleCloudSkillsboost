@@ -23,7 +23,7 @@ Start by accessing the Workbench from the following link:
 ```
 rm 1_training_at_scale_vertex.ipynb
 
-
+curl -LO https://github.com/Itsabhishek7py/GoogleCloudSkillsboost/blob/main/Training%20at%20Scale%20with%20Vertex%20AI%20Training%20Service/1_training_at_scale_vertex.ipynb
 
 ```
 
