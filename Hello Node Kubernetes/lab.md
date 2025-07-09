@@ -11,7 +11,9 @@
 
 
 ### Run the following Commands in CloudShell
-
+```
+export ZONE=
+```
 ```
 curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Hello%20Node%20Kubernetes/abhishek.sh
 sudo chmod +x abhishek.sh
