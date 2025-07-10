@@ -1,195 +1,187 @@
 #!/bin/bash
-# Define color variables
-BLACK=`tput setaf 0`
-RED=`tput setaf 1`
-GREEN=`tput setaf 2`
-YELLOW=`tput setaf 3`
-BLUE=`tput setaf 4`
-MAGENTA=`tput setaf 5`
-CYAN=`tput setaf 6`
-WHITE=`tput setaf 7`
 
-BG_BLACK=`tput setab 0`
-BG_RED=`tput setab 1`
-BG_GREEN=`tput setab 2`
-BG_YELLOW=`tput setab 3`
-BG_BLUE=`tput setab 4`
-BG_MAGENTA=`tput setab 5`
-BG_CYAN=`tput setab 6`
-BG_WHITE=`tput setab 7`
+# ==============================================
+#  Security Command Center Export 
+#  Created by Dr. Abhishek Cloud Tutorials
+# ==============================================
 
-BOLD=`tput bold`
-RESET=`tput sgr0`
-
-
-spinner() {
-    local pid=$!
-    local delay=0.1
-    local spinstr='|/-\'
-    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
-        local temp=${spinstr#?}
-        printf " [%c]  " "$spinstr"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-        printf "\b\b\b\b\b\b"
-    done
-    printf "    \b\b\b\b"
-}
+# Color and formatting definitions
+COLOR_RED=$'\033[0;91m'
+COLOR_GREEN=$'\033[0;92m'
+COLOR_YELLOW=$'\033[0;93m'
+COLOR_BLUE=$'\033[0;94m'
+COLOR_CYAN=$'\033[0;96m'
+COLOR_WHITE=$'\033[0;97m'
+STYLE_BOLD=$'\033[1m'
+FORMAT_RESET=$'\033[0m'
+BG_BLUE=$'\033[44m'
+FG_WHITE=$'\033[97m'
 
 clear
 
-# Dr. Abhishek Banner
-echo "${BLUE}${BOLD}====================================================================${RESET}"
-echo "${BLUE}${BOLD}                  Dr. Abhishek Cloud Tutorials                     ${RESET}"
-echo "${BLUE}${BOLD}====================================================================${RESET}"
+# Header
 echo
-echo "${GREEN}${BOLD}Starting Security Command Center Lab Execution${RESET}"
+echo "${BG_BLUE}${STYLE_BOLD}${FG_WHITE}════════════════════════════════════════════${FORMAT_RESET}"
+echo "${BG_BLUE}${STYLE_BOLD}${FG_WHITE}  DO LIKE THE VIDEO & SUBSCRIBE THE CHANNEL     ${FORMAT_RESET}"
+echo "${BG_BLUE}${STYLE_BOLD}${FG_WHITE}════════════════════════════════════════════${FORMAT_RESET}"
 echo
 
-# Step 1: Get Project ID
-echo "${CYAN}${BOLD}➤ Getting Project ID, Zone & Region${RESET}"
-export PROJECT_ID=$(gcloud config get project)
+# Function to display spinner
+show_spinner() {
+    local pid=$!
+    local delay=0.1
+    local spin_chars=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+    
+    tput civis
+    while kill -0 $pid 2>/dev/null; do
+        for char in "${spin_chars[@]}"; do
+            printf "\r${COLOR_CYAN}${STYLE_BOLD}${char}${FORMAT_RESET} $1 "
+            sleep $delay
+        done
+    done
+    tput cnorm
+    printf "\r${COLOR_GREEN}✔ $1 completed${FORMAT_RESET}\n"
+}
+
+# Step 1: Configure environment
+echo "${COLOR_YELLOW}${STYLE_BOLD}🔧 Configuring environment variables${FORMAT_RESET}"
+gcloud auth list
+
 export ZONE=$(gcloud compute project-info describe --format="value(commonInstanceMetadata.items[google-compute-default-zone])")
 export REGION=$(gcloud compute project-info describe --format="value(commonInstanceMetadata.items[google-compute-default-region])")
+export PROJECT_ID=$(gcloud config get-value project)
+
+gcloud config set compute/zone "$ZONE"
+gcloud config set compute/region "$REGION"
+
+echo "${COLOR_GREEN}${STYLE_BOLD}✔ Environment configured${FORMAT_RESET}"
+echo "${STYLE_BOLD}${COLOR_WHITE}┣ Project ID: ${PROJECT_ID}${FORMAT_RESET}"
+echo "${STYLE_BOLD}${COLOR_WHITE}┣ Region: ${REGION}${FORMAT_RESET}"
+echo "${STYLE_BOLD}${COLOR_WHITE}┗ Zone: ${ZONE}${FORMAT_RESET}"
+echo
+
+# Step 2: Enable Security Command Center
+echo "${COLOR_CYAN}${STYLE_BOLD}🛡️ Enabling Security Command Center API${FORMAT_RESET}"
+gcloud services enable securitycenter.googleapis.com --quiet &
+show_spinner "Enabling API"
+
+# Step 3: Create Pub/Sub resources
+echo "${COLOR_MAGENTA}${STYLE_BOLD}📨 Setting up Pub/Sub for findings export${FORMAT_RESET}"
 export BUCKET_NAME="scc-export-bucket-$PROJECT_ID"
 
-echo "${GREEN}✓ Project: $PROJECT_ID | Region: $REGION | Zone: $ZONE${RESET}"
+gcloud pubsub topics create projects/$PROJECT_ID/topics/export-findings-pubsub-topic &
+show_spinner "Creating Pub/Sub topic"
 
-# Step 2: Create Pub/Sub Topic
-echo "${CYAN}${BOLD}➤ Creating Pub/Sub Topic${RESET}"
-(gcloud pubsub topics create projects/$DEVSHELL_PROJECT_ID/topics/export-findings-pubsub-topic > /dev/null 2>&1) &
-spinner
-echo "${GREEN}✓ Created Pub/Sub topic: export-findings-pubsub-topic${RESET}"
+gcloud pubsub subscriptions create export-findings-pubsub-topic-sub \
+  --topic=projects/$PROJECT_ID/topics/export-findings-pubsub-topic &
+show_spinner "Creating Pub/Sub subscription"
 
-# Step 3: Create Pub/Sub Subscription
-echo "${CYAN}${BOLD}➤ Creating Pub/Sub Subscription${RESET}"
-(gcloud pubsub subscriptions create export-findings-pubsub-topic-sub --topic=projects/$DEVSHELL_PROJECT_ID/topics/export-findings-pubsub-topic > /dev/null 2>&1) &
-spinner
-echo "${GREEN}✓ Created subscription: export-findings-pubsub-topic-sub${RESET}"
+echo
+echo "${COLOR_WHITE}${STYLE_BOLD}🔗 Please create the export configuration:${FORMAT_RESET}"
+echo "${COLOR_BLUE}https://console.cloud.google.com/security/command-center/config/continuous-exports/pubsub?project=${PROJECT_ID}${FORMAT_RESET}"
+echo
 
-# Step 4: Manual Step
-echo "${CYAN}${BOLD}➤ Manual Configuration Required${RESET}"
-echo "${YELLOW}Please open this URL to create export-findings-pubsub:${RESET}"
-echo "${BLUE}https://console.cloud.google.com/security/command-center/config/continuous-exports/pubsub?project=$DEVSHELL_PROJECT_ID${RESET}"
-
-# Progress check function
-function check_progress {
-    while true; do
-        echo
-        read -p "${YELLOW}${BOLD}Have you created export-findings-pubsub? (Y/N): ${RESET}" user_input
-        case "$user_input" in
-            [Yy]) 
-                echo "${GREEN}✓ Continuing with the lab...${RESET}"
-                break
-                ;;
-            [Nn]) 
-                echo "${RED}Please create export-findings-pubsub first.${RESET}"
-                ;;
-            *) 
-                echo "${MAGENTA}Invalid input. Please enter Y or N.${RESET}" 
-                ;;
-        esac
-    done
-}
-
-check_progress
-
-# Step 5: Create Compute Instance
-echo "${CYAN}${BOLD}➤ Creating Compute Instance${RESET}"
-(gcloud compute instances create instance-1 --zone=$ZONE --machine-type e2-micro --scopes=https://www.googleapis.com/auth/cloud-platform > /dev/null 2>&1) &
-spinner
-echo "${GREEN}✓ Created instance: instance-1${RESET}"
-
-# Step 6: Create BigQuery Dataset
-echo "${CYAN}${BOLD}➤ Creating BigQuery Dataset${RESET}"
-(bq --location=$REGION --apilog=/dev/null mk --dataset $PROJECT_ID:continuous_export_dataset > /dev/null 2>&1) &
-spinner
-echo "${GREEN}✓ Created dataset: continuous_export_dataset${RESET}"
-
-# Step 7: Enable Security Center API
-echo "${CYAN}${BOLD}➤ Enabling Security Center API${RESET}"
-(gcloud services enable securitycenter.googleapis.com --quiet > /dev/null 2>&1) &
-spinner
-echo "${GREEN}✓ Security Center API enabled${RESET}"
-
-# Step 8: Create SCC BigQuery Export
-echo "${CYAN}${BOLD}➤ Creating SCC BigQuery Export${RESET}"
-(gcloud scc bqexports create scc-bq-cont-export --dataset=projects/$PROJECT_ID/datasets/continuous_export_dataset --project=$PROJECT_ID --quiet > /dev/null 2>&1) &
-spinner
-echo "${GREEN}✓ Created SCC BigQuery export${RESET}"
-
-# Step 9: Create Service Accounts and Keys
-echo "${CYAN}${BOLD}➤ Creating Service Accounts${RESET}"
-for i in {0..2}; do
-    (gcloud iam service-accounts create sccp-test-sa-$i > /dev/null 2>&1) &
-    spinner
-    (gcloud iam service-accounts keys create /tmp/sa-key-$i.json --iam-account=sccp-test-sa-$i@$PROJECT_ID.iam.gserviceaccount.com > /dev/null 2>&1) &
-    spinner
-    echo "${GREEN}✓ Created service account: sccp-test-sa-$i${RESET}"
+# Step 4: Confirmation prompt
+while true; do
+    read -p "${COLOR_YELLOW}${STYLE_BOLD}Do you want to proceed? (Y/n): ${FORMAT_RESET}" confirm
+    case "$confirm" in
+        [Yy]|"") 
+            echo "${COLOR_GREEN}${STYLE_BOLD}Continuing with setup...${FORMAT_RESET}"
+            break
+            ;;
+        [Nn]) 
+            echo "${COLOR_RED}Operation canceled.${FORMAT_RESET}"
+            exit 0
+            ;;
+        *) 
+            echo "${COLOR_RED}Invalid input. Please enter Y or N.${FORMAT_RESET}" 
+            ;;
+    esac
 done
 
-# Wait for findings function
-function wait_for_findings() {
-    echo "${CYAN}${BOLD}➤ Waiting for findings to populate...${RESET}"
-    while true; do
-        result=$(bq query --apilog=/dev/null --use_legacy_sql=false --format=pretty \
-          "SELECT finding_id, event_time, finding.category FROM continuous_export_dataset.findings" 2>/dev/null)
-        
-        if echo "$result" | grep -qE '^[|] [a-f0-9]{32} '; then
-            echo "${GREEN}✓ Findings detected!${RESET}"
-            break
-        else
-            printf "${YELLOW}⏳ No findings yet. Checking again in 30 seconds...${RESET}\r"
-            sleep 30
-        fi
-    done
+# Step 5: Create compute instance
+echo "${COLOR_CYAN}${STYLE_BOLD}🖥️ Creating compute instance${FORMAT_RESET}"
+gcloud compute instances create instance-1 --zone=$ZONE \
+  --machine-type=e2-micro \
+  --scopes=https://www.googleapis.com/auth/cloud-platform &
+show_spinner "Creating instance"
+
+# Step 6: BigQuery setup
+echo "${COLOR_BLUE}${STYLE_BOLD}📊 Setting up BigQuery dataset${FORMAT_RESET}"
+bq --location=$REGION mk --dataset $PROJECT_ID:continuous_export_dataset &
+show_spinner "Creating dataset"
+
+gcloud scc bqexports create scc-bq-cont-export \
+  --dataset=projects/$PROJECT_ID/datasets/continuous_export_dataset \
+  --project=$PROJECT_ID \
+  --quiet &
+show_spinner "Configuring BigQuery export"
+
+# Step 7: Create service accounts
+echo "${COLOR_MAGENTA}${STYLE_BOLD}👥 Creating service accounts${FORMAT_RESET}"
+for i in {0..2}; do
+    gcloud iam service-accounts create sccp-test-sa-$i &
+    show_spinner "Creating service account sccp-test-sa-$i"
+    
+    gcloud iam service-accounts keys create /tmp/sa-key-$i.json \
+    --iam-account=sccp-test-sa-$i@$PROJECT_ID.iam.gserviceaccount.com &
+    show_spinner "Creating key for sccp-test-sa-$i"
+done
+
+# Step 8: Wait for findings
+echo "${COLOR_YELLOW}${STYLE_BOLD}🔍 Waiting for security findings${FORMAT_RESET}"
+query_findings() {
+  bq query --apilog=/dev/null --use_legacy_sql=false --format=pretty \
+    "SELECT finding_id, event_time, finding.category FROM continuous_export_dataset.findings"
 }
 
-wait_for_findings
+has_findings() {
+  echo "$1" | grep -qE '^[|] [a-f0-9]{32} '
+}
 
-# Step 10: Create Storage Bucket
-echo "${CYAN}${BOLD}➤ Creating Storage Bucket${RESET}"
-(gsutil mb -l $REGION gs://$BUCKET_NAME/ > /dev/null 2>&1) &
-spinner
-echo "${GREEN}✓ Created bucket: gs://$BUCKET_NAME/${RESET}"
+while true; do
+    result=$(query_findings)
+    
+    if has_findings "$result"; then
+        echo "${COLOR_GREEN}${STYLE_BOLD}✔ Findings detected!${FORMAT_RESET}"
+        echo "$result"
+        break
+    else
+        echo "${COLOR_YELLOW}No findings yet. Waiting for 100 seconds...${FORMAT_RESET}"
+        sleep 100
+    fi
+done
 
-# Step 11: Enforce Public Access Prevention
-echo "${CYAN}${BOLD}➤ Enforcing Public Access Prevention${RESET}"
-(gsutil pap set enforced gs://$BUCKET_NAME > /dev/null 2>&1) &
-spinner
-echo "${GREEN}✓ Public access prevention enforced${RESET}"
+# Step 9: Storage setup
+echo "${COLOR_CYAN}${STYLE_BOLD}📦 Setting up Cloud Storage${FORMAT_RESET}"
+gsutil mb -l $REGION gs://$BUCKET_NAME/ &
+show_spinner "Creating bucket"
 
-# Step 12: Export Findings to JSONL
-echo "${CYAN}${BOLD}➤ Exporting Findings to JSONL${RESET}"
-(gcloud scc findings list "projects/$PROJECT_ID" --format=json | jq -c '.[]' > findings.jsonl) &
-spinner
-echo "${GREEN}✓ Findings exported to findings.jsonl${RESET}"
+gsutil pap set enforced gs://$BUCKET_NAME &
+show_spinner "Enabling public access prevention"
 
-# Step 13: Upload JSONL to Bucket
-echo "${CYAN}${BOLD}➤ Uploading Findings to Cloud Storage${RESET}"
-(gsutil cp findings.jsonl gs://$BUCKET_NAME/ > /dev/null 2>&1) &
-spinner
-echo "${GREEN}✓ Findings uploaded to gs://$BUCKET_NAME/findings.jsonl${RESET}"
+sleep 20
 
-# Final Manual Step
-echo "${CYAN}${BOLD}➤ Final Manual Step${RESET}"
-echo "${YELLOW}Please open BigQuery Console to create old_findings table:${RESET}"
-echo "${BLUE}https://console.cloud.google.com/bigquery?project=$DEVSHELL_PROJECT_ID${RESET}"
+# Step 10: Export findings
+echo "${COLOR_MAGENTA}${STYLE_BOLD}📤 Exporting findings to Cloud Storage${FORMAT_RESET}"
+gcloud scc findings list "projects/$PROJECT_ID" \
+  --format=json | jq -c '.[]' > findings.jsonl &
+show_spinner "Exporting findings"
 
-# Cleanup
-echo "${CYAN}${BOLD}➤ Cleaning up temporary files${RESET}"
-(rm -f findings.jsonl /tmp/sa-key-*.json > /dev/null 2>&1) &
-spinner
-echo "${GREEN}✓ Temporary files removed${RESET}"
+gsutil cp findings.jsonl gs://$BUCKET_NAME/ &
+show_spinner "Uploading findings to bucket"
 
-# Completion Message
+# Final output
 echo
-echo "${BLUE}${BOLD}====================================================================${RESET}"
-echo "${BLUE}${BOLD}               LAB EXECUTION COMPLETED SUCCESSFULLY               ${RESET}"
-echo "${BLUE}${BOLD}====================================================================${RESET}"
+echo "${BG_BLUE}${STYLE_BOLD}${FG_WHITE}════════════════════════════════════════════${FORMAT_RESET}"
+echo "${BG_BLUE}${STYLE_BOLD}${FG_WHITE}  SETUP COMPLETE!                          ${FORMAT_RESET}"
+echo "${BG_BLUE}${STYLE_BOLD}${FG_WHITE}════════════════════════════════════════════${FORMAT_RESET}"
 echo
-echo "${GREEN}${BOLD}Thank you for completing the lab!${RESET}"
+echo "${COLOR_WHITE}${STYLE_BOLD}Next steps:${FORMAT_RESET}"
+echo "┣ View findings in BigQuery: ${COLOR_BLUE}https://console.cloud.google.com/bigquery?project=${PROJECT_ID}${FORMAT_RESET}"
+echo "┣ Check exported files: ${COLOR_BLUE}https://console.cloud.google.com/storage/browser/${BUCKET_NAME}?project=${PROJECT_ID}${FORMAT_RESET}"
+echo "┗ Monitor SCC findings: ${COLOR_BLUE}https://console.cloud.google.com/security/command-center/findings?project=${PROJECT_ID}${FORMAT_RESET}"
 echo
-echo "${YELLOW}For more cloud tutorials and labs, subscribe to:${RESET}"
-echo "${CYAN}https://www.youtube.com/@drabhishek.5460/videos${RESET}"
+echo "${COLOR_MAGENTA}${STYLE_BOLD}For more cloud security tutorials, subscribe to:${FORMAT_RESET}"
+echo "${COLOR_BLUE}https://www.youtube.com/@drabhishek.5460${FORMAT_RESET}"
 echo
