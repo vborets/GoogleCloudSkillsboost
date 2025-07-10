@@ -11,6 +11,11 @@
 ### Run the following Commands in CloudShell
 
 ```
+python --version
+pip3 install tensorflow
+pip3 install --upgrade pip
+pip install -U pylint --user
+pip install -r requirements.txt
 curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/TensorFlow%3A%20Qwik%20Start/model.ipynb
 ```
 ### Congratulations !!!!
