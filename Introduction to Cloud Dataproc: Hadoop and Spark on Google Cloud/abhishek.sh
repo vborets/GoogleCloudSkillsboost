@@ -1,130 +1,146 @@
 #!/bin/bash
 
+# ==============================================
+#  Dataproc Cluster Deployment 
+#  Created by Dr. Abhishek Cloud Tutorials
+#  YouTube: https://www.youtube.com/@drabhishek.5460
+# ==============================================
 
-BLACK=`tput setaf 0`
-RED=`tput setaf 1`
-GREEN=`tput setaf 2`
-YELLOW=`tput setaf 3`
-BLUE=`tput setaf 4`
-MAGENTA=`tput setaf 5`
-CYAN=`tput setaf 6`
-WHITE=`tput setaf 7`
+# Text styles and colors
+YELLOW=$(tput setaf 3)
+GREEN=$(tput setaf 2)
+RED=$(tput setaf 1)
+BLUE=$(tput setaf 4)
+BOLD=$(tput bold)
+RESET=$(tput sgr0)
 
-BG_BLACK=`tput setab 0`
-BG_RED=`tput setab 1`
-BG_GREEN=`tput setab 2`
-BG_YELLOW=`tput setab 3`
-BG_BLUE=`tput setab 4`
-BG_MAGENTA=`tput setab 5`
-BG_CYAN=`tput setab 6`
-BG_WHITE=`tput setab 7`
-
-BOLD=`tput bold`
-RESET=`tput sgr0`
-
-# Array of color codes excluding black and white
-TEXT_COLORS=($RED $GREEN $YELLOW $BLUE $MAGENTA $CYAN)
-BG_COLORS=($BG_RED $BG_GREEN $BG_YELLOW $BG_BLUE $BG_MAGENTA $BG_CYAN)
-
-# Pick random colors
-RANDOM_TEXT_COLOR=${TEXT_COLORS[$RANDOM % ${#TEXT_COLORS[@]}]}
-RANDOM_BG_COLOR=${BG_COLORS[$RANDOM % ${#BG_COLORS[@]}]}
-
-#----------------------------------------------------start--------------------------------------------------#
-
-echo "${CYAN}${BOLD}"
-echo "**********************************************************************"
-echo "* Welcome to Dr. Abhishek Cloud Tutorial!                            *"
-echo "*                                                                    *"
-echo "* Please do like, share and subscribe to the channel:                *"
-echo "* https://www.youtube.com/@drabhishek.5460/videos                    *"
-echo "*                                                                    *"
-echo "* Thank you for your support!                                        *"
-echo "**********************************************************************"
-echo "${RESET}"
-
-echo "${RANDOM_BG_COLOR}${RANDOM_TEXT_COLOR}${BOLD}Starting Execution${RESET}"
-
-# Step 1: Get the project ID
-echo "${GREEN}${BOLD}Fetching PROJECT_ID${RESET}"
-export PROJECT_ID=$(gcloud config get-value project)
-
-# Step 2: Get the project number
-echo "${YELLOW}${BOLD}Fetching PROJECT_NUMBER${RESET}"
-export PROJECT_NUMBER=$(gcloud projects describe ${PROJECT_ID} \
-    --format="value(projectNumber)")
-
-# Step 3: Get the default zone
-echo "${BLUE}${BOLD}Fetching ZONE${RESET}"
-export ZONE=$(gcloud compute project-info describe \
---format="value(commonInstanceMetadata.items[google-compute-default-zone])")
-
-# Step 4: Get the default region
-echo "${MAGENTA}${BOLD}Fetching REGION${RESET}"
-export REGION=$(gcloud compute project-info describe \
---format="value(commonInstanceMetadata.items[google-compute-default-region])")
-
-# Step 5: Assign storage admin role
-echo "${CYAN}${BOLD}Assigning Storage Admin Role${RESET}"
-gcloud projects add-iam-policy-binding $DEVSHELL_PROJECT_ID \
-    --member=serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com \
-    --role=roles/storage.admin
-
-# Step 6: Create Dataproc cluster
-echo "${RED}${BOLD}Creating Dataproc Cluster${RESET}"
-gcloud dataproc clusters create qlab \
-    --enable-component-gateway \
-    --region $REGION \
-    --zone $ZONE \
-    --master-machine-type e2-standard-4 \
-    --master-boot-disk-type pd-balanced \
-    --master-boot-disk-size 100 \
-    --num-workers 2 \
-    --worker-machine-type e2-standard-2 \
-    --worker-boot-disk-size 100 \
-    --image-version 2.2-debian12 \
-    --project $DEVSHELL_PROJECT_ID
-
-# Step 7: Submit Spark job
-echo "${GREEN}${BOLD}Submitting Spark Job${RESET}"
-gcloud dataproc jobs submit spark \
-    --cluster qlab \
-    --region $REGION \
-    --class org.apache.spark.examples.SparkPi \
-    --jars file:///usr/lib/spark/examples/jars/spark-examples.jar \
-    -- 1000
-
+# Header
+echo
+echo "${BLUE}${BOLD}╔══════════════════════════════════════════╗${RESET}"
+echo "${BLUE}${BOLD}║   GOOGLE CLOUD DATAPROC DEPLOYMENT      ║${RESET}"
+echo "${BLUE}${BOLD}║        by Dr. Abhishek Cloud           ║${RESET}"
+echo "${BLUE}${BOLD}╚══════════════════════════════════════════╝${RESET}"
 echo
 
-
-echo "${CYAN}${BOLD}"
-echo "**********************************************************************"
-echo "* Lab execution completed successfully!                              *"
-echo "*                                                                    *"
-echo "* Don't forget to subscribe to Dr. Abhishek's YouTube channel:       *"
-echo "* https://www.youtube.com/@drabhishek.5460/videos                    *"
-echo "*                                                                    *"
-echo "* Thank you for following along!                                     *"
-echo "**********************************************************************"
-echo "${RESET}"
-
-echo -e "\n"  # Adding one blank line
-
-cd
-
-remove_files() {
-    # Loop through all files in the current directory
-    for file in *; do
-        # Check if the file name starts with "gsp", "arc", or "shell"
-        if [[ "$file" == gsp* || "$file" == arc* || "$file" == shell* ]]; then
-            # Check if it's a regular file (not a directory)
-            if [[ -f "$file" ]]; then
-                # Remove the file and echo the file name
-                rm "$file"
-                echo "File removed: $file"
-            fi
-        fi
+# Function to show spinner
+show_spinner() {
+    local pid=$!
+    local delay=0.1
+    local spinstr='|/-\'
+    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+        local temp=${spinstr#?}
+        printf " [%c]  " "$spinstr"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b"
     done
+    printf "    \b\b\b\b"
 }
 
-remove_files
+# Get user input
+echo "${YELLOW}${BOLD}Please provide the following configuration details:${RESET}"
+read -p "${YELLOW}${BOLD}Enter the CLUSTER_NAME: ${RESET}" CLUSTER_NAME
+export CLUSTER_NAME
+
+# Initialize environment
+echo
+echo "${BLUE}${BOLD}🔧 Initializing environment...${RESET}"
+gcloud auth list
+
+export ZONE=$(gcloud compute project-info describe --format="value(commonInstanceMetadata.items[google-compute-default-zone])")
+export REGION=$(gcloud compute project-info describe --format="value(commonInstanceMetadata.items[google-compute-default-region])")
+export PROJECT_ID=$(gcloud config get-value project)
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+
+echo "${GREEN}✓ Environment configured${RESET}"
+echo " Project: ${PROJECT_ID}"
+echo " Region:  ${REGION}"
+echo " Zone:    ${ZONE}"
+echo
+
+# Configure IAM permissions
+echo "${BLUE}${BOLD}🔐 Configuring IAM permissions...${RESET}"
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
+    --role="roles/storage.admin" > /dev/null 2>&1 &
+show_spinner
+echo "${GREEN}✓ Permissions configured${RESET}"
+
+# Cluster deployment function
+deploy_cluster() {
+    echo
+    echo "${BLUE}${BOLD}🚀 Deploying Dataproc cluster '$CLUSTER_NAME'...${RESET}"
+    gcloud dataproc clusters create "$CLUSTER_NAME" \
+        --region "$REGION" \
+        --zone "$ZONE" \
+        --master-machine-type n1-standard-2 \
+        --worker-machine-type n1-standard-2 \
+        --num-workers 2 \
+        --worker-boot-disk-size 100 \
+        --worker-boot-disk-type pd-standard \
+        --no-address > /dev/null 2>&1
+}
+
+# Cluster deployment with retry logic
+cp_success=false
+attempt=1
+max_attempts=3
+
+while [ "$cp_success" = false ] && [ "$attempt" -le "$max_attempts" ]; do
+    deploy_cluster
+    exit_status=$?
+
+    if [ "$exit_status" -eq 0 ]; then
+        echo "${GREEN}✓ Cluster deployed successfully${RESET}"
+        cp_success=true
+    else
+        echo "${RED}✗ Cluster creation failed (Attempt $attempt of $max_attempts)${RESET}"
+        
+        if gcloud dataproc clusters describe "$CLUSTER_NAME" --region "$REGION" &>/dev/null; then
+            echo "${YELLOW}Cluster already exists. Deleting...${RESET}"
+            gcloud dataproc clusters delete "$CLUSTER_NAME" --region "$REGION" --quiet > /dev/null 2>&1 &
+            show_spinner
+            echo "${GREEN}✓ Existing cluster deleted${RESET}"
+        fi
+        
+        attempt=$((attempt + 1))
+        if [ "$attempt" -le "$max_attempts" ]; then
+            echo "${YELLOW}Retrying in 10 seconds...${RESET}"
+            sleep 10
+        fi
+    fi
+done
+
+if [ "$cp_success" = false ]; then
+    echo "${RED}${BOLD}Failed to deploy cluster after $max_attempts attempts. Exiting.${RESET}"
+    exit 1
+fi
+
+# Submit Spark job
+echo
+echo "${BLUE}${BOLD}⚡ Submitting Spark job to cluster...${RESET}"
+gcloud dataproc jobs submit spark \
+    --project $PROJECT_ID \
+    --region $REGION \
+    --cluster $CLUSTER_NAME \
+    --class org.apache.spark.examples.SparkPi \
+    --jars file:///usr/lib/spark/examples/jars/spark-examples.jar \
+    -- 1000 > /dev/null 2>&1 &
+show_spinner
+echo "${GREEN}✓ Spark job submitted${RESET}"
+
+# Final output
+echo
+echo "${BLUE}${BOLD}╔══════════════════════════════════════════╗${RESET}"
+echo "${BLUE}${BOLD}║        DEPLOYMENT COMPLETE!             ║${RESET}"
+echo "${BLUE}${BOLD}╚══════════════════════════════════════════╝${RESET}"
+echo
+echo "${BOLD}Next steps:${RESET}"
+echo " • View your Dataproc jobs:"
+echo "   ${BLUE}https://console.cloud.google.com/dataproc/jobs?project=${PROJECT_ID}${RESET}"
+echo " • Manage your cluster:"
+echo "   ${BLUE}https://console.cloud.google.com/dataproc/clusters?project=${PROJECT_ID}${RESET}"
+echo
+echo "${YELLOW}${BOLD}For more cloud tutorials, subscribe to:${RESET}"
+echo "${BLUE}https://www.youtube.com/@drabhishek.5460${RESET}"
+echo
