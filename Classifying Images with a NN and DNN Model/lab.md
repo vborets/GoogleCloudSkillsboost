@@ -1,4 +1,5 @@
-# TensorFlow Dataset API
+# Classifying Images with a NN and DNN Model
+
 
 ## 🚀 Step-by-Step Guide
 
