@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================
-#  VPC Network Peering Setup 
+#  VPC Network Peering Setup
 #  Created by Dr. Abhishek Cloud Tutorials
 #  YouTube: https://www.youtube.com/@drabhishek.5460
 # ==============================================
@@ -26,12 +26,19 @@ echo "${YELLOW}Please like the video and subscribe to our channel:${RESET}"
 echo "${BLUE}https://www.youtube.com/@drabhishek.5460/videos${RESET}"
 echo
 
+# Get user input for required values
+echo "${YELLOW}Please enter the following configuration details:${RESET}"
+read -p "${YELLOW}Enter the Second Project ID: ${RESET}" SECOND_PROJECT_ID
+read -p "${YELLOW}Enter Zone 1 for first project (e.g., us-central1-a): ${RESET}" ZONE_1
+read -p "${YELLOW}Enter Zone 2 for second project (e.g., us-east1-b): ${RESET}" ZONE_2
+
 # Initialize variables
+echo
 echo "${GREEN}${BOLD}Initializing environment variables...${RESET}"
 export FIRST_PROJECT_ID=$DEVSHELL_PROJECT_ID
-export SECOND_PROJECT_ID="your-second-project-id"  # Replace with actual project ID
-export ZONE_1="your-first-zone"                   # Replace with actual zone (e.g., us-central1-a)
-export ZONE_2="your-second-zone"                  # Replace with actual zone (e.g., us-east1-b)
+export SECOND_PROJECT_ID=$SECOND_PROJECT_ID
+export ZONE_1=$ZONE_1
+export ZONE_2=$ZONE_2
 
 # Derive regions from zones
 export REGION_1="${ZONE_1%-*}"
@@ -131,7 +138,9 @@ echo " • Project ${FIRST_PROJECT_ID} (Network: network-a)"
 echo " • Project ${SECOND_PROJECT_ID} (Network: network-b)"
 echo
 echo "${YELLOW}Next steps:${RESET}"
-echo " 1. Test connectivity between vm-a and vm-b"
+echo " 1. Test connectivity between vm-a and vm-b:"
+echo "    - gcloud compute ssh vm-a --zone $ZONE_1"
+echo "    - ping vm-b's internal IP"
 echo " 2. Configure any additional firewall rules as needed"
 echo
 echo "${MAGENTA}For more cloud tutorials, subscribe to:${RESET}"
