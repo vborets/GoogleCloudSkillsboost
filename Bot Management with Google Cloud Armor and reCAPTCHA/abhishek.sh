@@ -1,70 +1,26 @@
 
-#!/bin/bash
 
-# Welcome message
-echo "============================================="
-echo " Welcome to Dr. Abhishek Cloud Tutorials!    "
-echo "============================================="
-echo " Please like the video and subscribe to the  "
-echo " channel if you find this content helpful.   "
-echo "---------------------------------------------"
-echo ""
 
-# Function to show spinner while commands run
-spinner() {
-    local pid=$!
-    local delay=0.25
-    local spinstr='|/-\'
-    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
-        local temp=${spinstr#?}
-        printf " [%c]  " "$spinstr"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-        printf "\b\b\b\b\b\b"
-    done
-    printf "    \b\b\b\b"
-}
 
-# Prompt user for zone input
-echo "Please enter your preferred zone (e.g., us-central1-a):"
-read -p "Zone: " ZONE
-export ZONE
-
-echo ""
-echo "Starting setup... This may take a few minutes."
-echo ""
-
-# Set project and region
 export PROJECT_ID=$(gcloud config get-value project)
-echo -n "Setting project $PROJECT_ID... "
-gcloud config set project $PROJECT_ID > /dev/null 2>&1 &
-spinner
-echo "Done"
+
+gcloud config set project $PROJECT_ID
+
 
 export REGION="${ZONE%-*}"
-echo "Region automatically set to: $REGION"
-echo ""
 
-# Enable required services
-echo -n "Enabling required Google Cloud services... "
-gcloud services enable compute.googleapis.com > /dev/null 2>&1 &
-gcloud services enable logging.googleapis.com > /dev/null 2>&1 &
-gcloud services enable monitoring.googleapis.com > /dev/null 2>&1 &
-gcloud services enable recaptchaenterprise.googleapis.com > /dev/null 2>&1 &
-spinner
-echo "Done"
-echo ""
+gcloud services enable compute.googleapis.com
+gcloud services enable logging.googleapis.com
+gcloud services enable monitoring.googleapis.com
+gcloud services enable recaptchaenterprise.googleapis.com
 
-# Create firewall rules
-echo -n "Creating firewall rules for health checks and SSH... "
-gcloud compute firewall-rules create default-allow-health-check --direction=INGRESS --priority=1000 --network=default --action=ALLOW --rules=tcp:80 --source-ranges=130.211.0.0/22,35.191.0.0/16 --target-tags=allow-health-check > /dev/null 2>&1 &
-gcloud compute firewall-rules create allow-ssh --direction=INGRESS --priority=1000 --network=default --action=ALLOW --rules=tcp:22 --source-ranges=0.0.0.0/0 --target-tags=allow-health-check > /dev/null 2>&1 &
-spinner
-echo "Done"
-echo ""
 
-# Create instance template
-echo -n "Creating instance template for load balancer backend... "
+gcloud compute firewall-rules create default-allow-health-check --direction=INGRESS --priority=1000 --network=default --action=ALLOW --rules=tcp:80 --source-ranges=130.211.0.0/22,35.191.0.0/16 --target-tags=allow-health-check
+
+gcloud compute firewall-rules create allow-ssh --direction=INGRESS --priority=1000 --network=default --action=ALLOW --rules=tcp:22 --source-ranges=0.0.0.0/0 --target-tags=allow-health-check
+
+
+
 gcloud compute instance-templates create lb-backend-template \
     --machine-type=n1-standard-1 \
     --region=$REGION \
@@ -78,34 +34,28 @@ sudo a2ensite default-ssl
 sudo a2enmod ssl
 sudo su
 vm_hostname="$(curl -H "Metadata-Flavor:Google" http://metadata.google.internal/computeMetadata/v1/instance/name)"
-echo "Page served from: $vm_hostname" | tee /var/www/html/index.html' > /dev/null 2>&1 &
-spinner
-echo "Done"
-echo ""
+echo "Page served from: $vm_hostname" | tee /var/www/html/index.html'
 
-sleep 10
 
-# Create managed instance group
-echo -n "Creating managed instance group... "
-gcloud beta compute instance-groups managed create lb-backend-example --project=$PROJECT_ID --base-instance-name=lb-backend-example --template=projects/$PROJECT_ID/global/instanceTemplates/lb-backend-template --size=1 --zone=$ZONE --default-action-on-vm-failure=repair --no-force-update-on-repair --standby-policy-mode=manual --list-managed-instances-results=PAGELESS > /dev/null 2>&1 && 
-gcloud beta compute instance-groups managed set-autoscaling lb-backend-example --project=$PROJECT_ID --zone=$ZONE --mode=off --min-num-replicas=1 --max-num-replicas=10 --target-cpu-utilization=0.6 --cool-down-period=60 > /dev/null 2>&1 &
-spinner
-echo "Done"
-echo ""
 
-echo -n "Setting named ports for instance group... "
+
+sleep 40
+
+gcloud beta compute instance-groups managed create lb-backend-example --project=$PROJECT_ID --base-instance-name=lb-backend-example --template=projects/$PROJECT_ID/global/instanceTemplates/lb-backend-template --size=1 --zone=$ZONE --default-action-on-vm-failure=repair --no-force-update-on-repair --standby-policy-mode=manual --list-managed-instances-results=PAGELESS && gcloud beta compute instance-groups managed set-autoscaling lb-backend-example --project=$PROJECT_ID --zone=$ZONE --mode=off --min-num-replicas=1 --max-num-replicas=10 --target-cpu-utilization=0.6 --cool-down-period=60
+
+
 gcloud compute instance-groups set-named-ports lb-backend-example \
 --named-ports http:80 \
---zone $ZONE > /dev/null 2>&1 &
-spinner
-echo "Done"
-echo ""
+--zone $ZONE
+
+
+
+
 
 DEVSHELL_PROJECT_ID=$(gcloud config get-value project)
 TOKEN=$(gcloud auth application-default print-access-token)
 
-# Create health check
-echo -n "Creating health check... "
+# Define cURL command for creating health check
 curl -X POST -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
@@ -124,15 +74,13 @@ curl -X POST -H "Content-Type: application/json" \
     "type": "TCP",
     "unhealthyThreshold": 2
   }' \
-  "https://compute.googleapis.com/compute/beta/projects/$DEVSHELL_PROJECT_ID/global/healthChecks" > /dev/null 2>&1 &
-spinner
-echo "Done"
-echo ""
+  "https://compute.googleapis.com/compute/beta/projects/$DEVSHELL_PROJECT_ID/global/healthChecks"
 
-sleep 10
 
-# Create security policy
-echo -n "Creating security policy... "
+sleep 30
+
+
+# Define cURL command for creating security policy
 curl -X POST -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
@@ -175,15 +123,13 @@ curl -X POST -H "Content-Type: application/json" \
       }
     ]
   }' \
-  "https://compute.googleapis.com/compute/v1/projects/$DEVSHELL_PROJECT_ID/global/securityPolicies" > /dev/null 2>&1 &
-spinner
-echo "Done"
-echo ""
+  "https://compute.googleapis.com/compute/v1/projects/$DEVSHELL_PROJECT_ID/global/securityPolicies"
 
-sleep 10
 
-# Create backend service
-echo -n "Creating backend service... "
+sleep 30
+
+
+# Define cURL command for creating backend service
 curl -X POST -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
@@ -227,59 +173,48 @@ curl -X POST -H "Content-Type: application/json" \
     "sessionAffinity": "NONE",
     "timeoutSec": 30
   }' \
-  "https://compute.googleapis.com/compute/beta/projects/$DEVSHELL_PROJECT_ID/global/backendServices" > /dev/null 2>&1 &
-spinner
-echo "Done"
-echo ""
+  "https://compute.googleapis.com/compute/beta/projects/$DEVSHELL_PROJECT_ID/global/backendServices"
 
-sleep 10
 
-# Set security policy for backend service
-echo -n "Setting security policy for backend service... "
+sleep 30
+
+
+# Define cURL command for setting security policy for backend service
 curl -X POST -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
     "securityPolicy": "projects/'"$DEVSHELL_PROJECT_ID"'/global/securityPolicies/default-security-policy-for-backend-service-http-backend"
   }' \
-  "https://compute.googleapis.com/compute/v1/projects/$DEVSHELL_PROJECT_ID/global/backendServices/http-backend/setSecurityPolicy" > /dev/null 2>&1 &
-spinner
-echo "Done"
-echo ""
+  "https://compute.googleapis.com/compute/v1/projects/$DEVSHELL_PROJECT_ID/global/backendServices/http-backend/setSecurityPolicy"
 
-sleep 10
 
-# Create URL map
-echo -n "Creating URL map... "
+sleep 30
+
+# Define cURL command for creating URL map
 curl -X POST -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
     "defaultService": "projects/'"$DEVSHELL_PROJECT_ID"'/global/backendServices/http-backend",
     "name": "http-lb"
   }' \
-  "https://compute.googleapis.com/compute/v1/projects/$DEVSHELL_PROJECT_ID/global/urlMaps" > /dev/null 2>&1 &
-spinner
-echo "Done"
-echo ""
+  "https://compute.googleapis.com/compute/v1/projects/$DEVSHELL_PROJECT_ID/global/urlMaps"
 
-sleep 10
+sleep 30
 
-# Create target HTTP proxy
-echo -n "Creating target HTTP proxy... "
+
+# Define cURL command for creating target HTTP proxy
 curl -X POST -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
     "name": "http-lb-target-proxy",
     "urlMap": "projects/'"$DEVSHELL_PROJECT_ID"'/global/urlMaps/http-lb"
   }' \
-  "https://compute.googleapis.com/compute/v1/projects/$DEVSHELL_PROJECT_ID/global/targetHttpProxies" > /dev/null 2>&1 &
-spinner
-echo "Done"
-echo ""
+  "https://compute.googleapis.com/compute/v1/projects/$DEVSHELL_PROJECT_ID/global/targetHttpProxies"
 
-sleep 10
+sleep 30
 
-# Create forwarding rule
-echo -n "Creating forwarding rule... "
+
+# Define cURL command for creating forwarding rule (IPv4)
 curl -X POST -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
@@ -291,42 +226,40 @@ curl -X POST -H "Content-Type: application/json" \
     "portRange": "80",
     "target": "projects/'"$DEVSHELL_PROJECT_ID"'/global/targetHttpProxies/http-lb-target-proxy"
   }' \
-  "https://compute.googleapis.com/compute/v1/projects/$DEVSHELL_PROJECT_ID/global/forwardingRules" > /dev/null 2>&1 &
-spinner
-echo "Done"
-echo ""
+  "https://compute.googleapis.com/compute/v1/projects/$DEVSHELL_PROJECT_ID/global/forwardingRules"
 
-sleep 10
 
-# Create reCAPTCHA keys
-echo -n "Creating reCAPTCHA session token key... "
+sleep 30
+
+# Run the gcloud command and store the output in a variable using command substitution
 TOKEN_KEY=$(gcloud recaptcha keys create --display-name=test-key-name \
   --web --allow-all-domains --integration-type=score --testing-score=0.5 \
-  --waf-feature=session-token --waf-service=ca --format="value(name)" 2>/dev/null) &
-spinner
-TOKEN_KEY=$(echo "$TOKEN_KEY" | awk -F '/' '{print $NF}')
-echo "Done (Key: $TOKEN_KEY)"
-echo ""
+  --waf-feature=session-token --waf-service=ca --format="value(name)")
 
-echo -n "Creating reCAPTCHA challenge page key... "
+# Extract the token key without the project and key path
+TOKEN_KEY=$(echo "$TOKEN_KEY" | awk -F '/' '{print $NF}')
+
+# Echo the token key
+echo "Token key: $TOKEN_KEY"
+
+
+
 RECAPTCHA_KEY=$(gcloud recaptcha keys create --display-name=challenge-page-key \
 --web --allow-all-domains --integration-type=INVISIBLE \
---waf-feature=challenge-page --waf-service=ca --format="value(name)" 2>/dev/null) &
-spinner
-RECAPTCHA_KEY=$(echo "$RECAPTCHA_KEY" | awk -F '/' '{print $NF}')
-echo "Done (Key: $RECAPTCHA_KEY)"
-echo ""
+--waf-feature=challenge-page --waf-service=ca --format="value(name)")
 
-# Get instance name
-echo -n "Getting instance name... "
+
+RECAPTCHA_KEY=$(echo "$RECAPTCHA_KEY" | awk -F '/' '{print $NF}' )
+
+
+# Run the gcloud command to list VM instances and filter by name
 INSTANCE_NAME=$(gcloud compute instances list --format="value(name)" \
-  --filter="name~^lb-backend-example" | head -n 1 2>/dev/null) &
-spinner
-echo "Done (Instance: $INSTANCE_NAME)"
-echo ""
+  --filter="name~^lb-backend-example" | head -n 1)
 
-# Prepare disk with custom content
-echo -n "Preparing disk with custom content... "
+# Echo the instance name
+echo "Instance name: $INSTANCE_NAME"
+
+
 cat > prepare_disk.sh <<'EOF_END'
 export TOKEN_KEY="$TOKEN_KEY"
 
@@ -385,73 +318,50 @@ sudo tee median-score.html > /dev/null <<MEDIAN_SCORE_CONTENT
 MEDIAN_SCORE_CONTENT
 EOF_END
 
-gcloud compute scp prepare_disk.sh $INSTANCE_NAME:/tmp --project=$DEVSHELL_PROJECT_ID --zone=$ZONE --quiet > /dev/null 2>&1 &
-gcloud compute ssh $INSTANCE_NAME --project=$DEVSHELL_PROJECT_ID --zone=$ZONE --quiet --command="export TOKEN_KEY=$TOKEN_KEY && bash /tmp/prepare_disk.sh" > /dev/null 2>&1 &
-spinner
-echo "Done"
-echo ""
+gcloud compute scp prepare_disk.sh $INSTANCE_NAME:/tmp --project=$DEVSHELL_PROJECT_ID --zone=$ZONE --quiet
 
-# Create reCAPTCHA security policy
-echo -n "Creating reCAPTCHA security policy... "
+gcloud compute ssh $INSTANCE_NAME --project=$DEVSHELL_PROJECT_ID --zone=$ZONE --quiet --command="export TOKEN_KEY=$TOKEN_KEY && bash /tmp/prepare_disk.sh"
+
+
+
 gcloud compute security-policies create recaptcha-policy \
-    --description "policy for bot management" > /dev/null 2>&1 &
-spinner
-echo "Done"
-echo ""
+    --description "policy for bot management"
 
-echo -n "Updating security policy with reCAPTCHA key... "
 gcloud compute security-policies update recaptcha-policy \
-  --recaptcha-redirect-site-key "$RECAPTCHA_KEY" > /dev/null 2>&1 &
-spinner
-echo "Done"
-echo ""
+  --recaptcha-redirect-site-key "$RECAPTCHA_KEY"
 
-echo -n "Adding security policy rules... "
 gcloud compute security-policies rules create 2000 \
-    --security-policy recaptcha-policy \
-    --expression "request.path.matches('good-score.html') && token.recaptcha_session.score > 0.4" \
-    --action allow > /dev/null 2>&1 &
+    --security-policy recaptcha-policy\
+    --expression "request.path.matches('good-score.html') &&    token.recaptcha_session.score > 0.4"\
+    --action allow
 
 gcloud compute security-policies rules create 3000 \
-    --security-policy recaptcha-policy \
-    --expression "request.path.matches('bad-score.html') && token.recaptcha_session.score < 0.6" \
-    --action "deny-403" > /dev/null 2>&1 &
+    --security-policy recaptcha-policy\
+    --expression "request.path.matches('bad-score.html') && token.recaptcha_session.score < 0.6"\
+    --action "deny-403"
 
 gcloud compute security-policies rules create 1000 \
-    --security-policy recaptcha-policy \
-    --expression "request.path.matches('median-score.html') && token.recaptcha_session.score == 0.5" \
+    --security-policy recaptcha-policy\
+    --expression "request.path.matches('median-score.html') && token.recaptcha_session.score == 0.5"\
     --action redirect \
-    --redirect-type google-recaptcha > /dev/null 2>&1 &
-spinner
-echo "Done"
-echo ""
+    --redirect-type google-recaptcha
 
-echo -n "Updating backend service with security policy... "
 gcloud compute backend-services update http-backend \
-    --security-policy recaptcha-policy --global > /dev/null 2>&1 &
-spinner
-echo "Done"
-echo ""
+    --security-policy recaptcha-policy --global
 
-# Get load balancer IP
-echo -n "Getting load balancer IP address... "
-LB_IP_ADDRESS=$(gcloud compute forwarding-rules describe http-lb-forwarding-rule --global --format="value(IPAddress)" 2>/dev/null) &
-spinner
-echo "Done"
-echo ""
 
-# Final output
-echo "============================================="
-echo " Setup Complete!                            "
-echo "============================================="
-echo " Load Balancer IP: http://$LB_IP_ADDRESS"
-echo " Test URLs:"
-echo "   - Main page: http://$LB_IP_ADDRESS/index.html"
-echo "   - Good score test: http://$LB_IP_ADDRESS/good-score.html"
-echo "   - Bad score test: http://$LB_IP_ADDRESS/bad-score.html"
-echo "   - Median score test: http://$LB_IP_ADDRESS/median-score.html"
-echo ""
-echo " Thank you for following along with Dr. Abhishek's"
-echo " Cloud Tutorial! Don't forget to like the video"
-echo " and subscribe to the channel for more content!"
-echo "============================================="
+
+
+LB_IP_ADDRESS=$(gcloud compute forwarding-rules describe http-lb-forwarding-rule --global --format="value(IPAddress)")
+
+
+
+echo $LB_IP_ADDRESS
+
+
+gcloud logging read "resource.type:(http_load_balancer) AND jsonPayload.enforcedSecurityPolicy.name:(recaptcha-policy)" --project=$DEVSHELL_PROJECT_ID --format=json
+
+gcloud logging read "resource.type:(http_load_balancer) AND jsonPayload.enforcedSecurityPolicy.name:(recaptcha-policy)" --project=$DEVSHELL_PROJECT_ID --format=json
+
+
+echo "http://$LB_IP_ADDRESS/index.html"
