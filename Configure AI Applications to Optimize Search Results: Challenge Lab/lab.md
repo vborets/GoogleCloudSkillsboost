@@ -45,76 +45,16 @@ We gratefully acknowledge Google's learning resources that make cloud education 
 </div>
 
 ```
-# Export your Project ID
-export PROJECT_ID=""
+{"id": "doc-1", "title": "Heaven Resort", "category": "information", "rating": 4.8, "uri": "gs://qwiklabs-gcp-04-38c23342abe4/hotel1.pdf"}
+{"id": "doc-2", "title": "Paradise Reef Resort", "category": "information", "rating": 4.7, "uri": "gs://qwiklabs-gcp-04-38c23342abe4/hotel2.pdf"}
+{"id": "doc-3", "title": "AquaPulse Maldives", "category": "information", "rating": 4.0, "uri": "gs://qwiklabs-gcp-04-38c23342abe4/hotel3.pdf"}
+{"id": "doc-4", "title": "Heaven Resort Financials", "category": "financials", "rating": 4.8, "uri": "gs://qwiklabs-gcp-04-38c23342abe4/hotel1-financials.pdf"}
+{"id": "doc-5", "title": "Paradise Reef Resort Financials", "category": "financials", "rating": 4.7, "uri": "gs://qwiklabs-gcp-04-38c23342abe4/hotel2-financials.pdf"}
+{"id": "doc-6", "title": "AquaPulse Maldives Financials", "category": "financials", "rating": 4.0, "uri": "gs://qwiklabs-gcp-04-38c23342abe4/hotel3-financials.pdf"}
 ```
 ```
-# Export the base Cloud Storage path
-export BASE_URI="gs://${PROJECT_ID}"
-
-# Export all document URIs
-export DOC1_URI="${BASE_URI}/hotel1.pdf"
-export DOC2_URI="${BASE_URI}/hotel2.pdf"
-export DOC3_URI="${BASE_URI}/hotel3.pdf"
-export DOC4_URI="${BASE_URI}/hotel1-financials.pdf"
-export DOC5_URI="${BASE_URI}/hotel2-financials.pdf"
-export DOC6_URI="${BASE_URI}/hotel3-financials.pdf"
-export METADATA_URI="${BASE_URI}/metadata.json"
-
-# *********************************************************
-#  Dr. Abhishek Official Branding - Knowledge and Integrity
-#  For more insights: Like, Share, and Subscribe!
-#  YouTube: https://www.youtube.com/@drabhishek.5460/videos
-# *********************************************************
-
-# -------------------------------------
-# Task 1: Create and upload metadata.json
-# -------------------------------------
-
-cat > metadata.json <<EOF
-{"id": "doc-1", "title": "Heaven Resort", "category": "information", "rating": 4.8, "Document URI": "${DOC1_URI}"}
-{"id": "doc-2", "title": "Paradise Reef Resort", "category": "information", "rating": 4.7, "Document URI": "${DOC2_URI}"}
-{"id": "doc-3", "title": "AquaPulse Maldives", "category": "information", "rating": 4.0, "Document URI": "${DOC3_URI}"}
-{"id": "doc-4", "title": "Heaven Resort Financials", "category": "financials", "rating": 4.8, "Document URI": "${DOC4_URI}"}
-{"id": "doc-5", "title": "Paradise Reef Resort Financials", "category": "financials", "rating": 4.7, "Document URI": "${DOC5_URI}"}
-{"id": "doc-6", "title": "AquaPulse Maldives Financials", "category": "financials", "rating": 4.0, "Document URI": "${DOC6_URI}"}
-EOF
-
-gsutil cp metadata.json "${METADATA_URI}"
-
-# ---------------------------------------------------------------
-# Task 4: Filter responses (using variables)
-# ---------------------------------------------------------------
-curl -X POST \
-  -H "Authorization: Bearer $(gcloud auth print-access-token)" \
-  -H "Content-Type: application/json" \
-  "https://discoveryengine.googleapis.com/v1alpha/projects/${PROJECT_ID}/locations/global/collections/default_collection/dataStores/cymbal-travel-datastore/servingConfigs/default_search:search" \
-  -d '{
-    "query": "What hotels are available in the Maldives?",
-    "filter": "category:information"
-  }'
-
-curl -X POST \
-  -H "Authorization: Bearer $(gcloud auth print-access-token)" \
-  -H "Content-Type: application/json" \
-  "https://discoveryengine.googleapis.com/v1alpha/projects/${PROJECT_ID}/locations/global/collections/default_collection/dataStores/cymbal-travel-datastore/servingConfigs/default_search:search" \
-  -d '{
-    "query": "What is the revenue for the hotels in the Maldives?",
-    "filter": "category:financials"
-  }'
-
-# ---------------------------------------------------------------
-# Task 5: Boost results with higher ratings
-# ---------------------------------------------------------------
-curl -X POST \
-  -H "Authorization: Bearer $(gcloud auth print-access-token)" \
-  -H "Content-Type: application/json" \
-  "https://discoveryengine.googleapis.com/v1alpha/projects/${PROJECT_ID}/locations/global/collections/default_collection/dataStores/cymbal-travel-datastore/servingConfigs/default_search:search" \
-  -d '{
-    "query": "What hotels are available in the Maldives?",
-    "filter": "category:information",
-    "pageSize": 2
-  }'
+gsutil cp metadata.json gs://qwiklabs-gcp-04-38c23342abe4/metadata.json
+```
 
 # *********************************************************
 #  Knowledge shared by Dr. Abhishek
