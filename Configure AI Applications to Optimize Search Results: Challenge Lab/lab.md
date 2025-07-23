@@ -45,12 +45,13 @@ We gratefully acknowledge Google's learning resources that make cloud education 
 </div>
 
 ```
-{"id": "doc-1", "title": "Heaven Resort", "category": "information", "rating": 4.8, "uri": "gs://qwiklabs-gcp-04-38c23342abe4/hotel1.pdf"}
-{"id": "doc-2", "title": "Paradise Reef Resort", "category": "information", "rating": 4.7, "uri": "gs://qwiklabs-gcp-04-38c23342abe4/hotel2.pdf"}
-{"id": "doc-3", "title": "AquaPulse Maldives", "category": "information", "rating": 4.0, "uri": "gs://qwiklabs-gcp-04-38c23342abe4/hotel3.pdf"}
-{"id": "doc-4", "title": "Heaven Resort Financials", "category": "financials", "rating": 4.8, "uri": "gs://qwiklabs-gcp-04-38c23342abe4/hotel1-financials.pdf"}
-{"id": "doc-5", "title": "Paradise Reef Resort Financials", "category": "financials", "rating": 4.7, "uri": "gs://qwiklabs-gcp-04-38c23342abe4/hotel2-financials.pdf"}
-{"id": "doc-6", "title": "AquaPulse Maldives Financials", "category": "financials", "rating": 4.0, "uri": "gs://qwiklabs-gcp-04-38c23342abe4/hotel3-financials.pdf"}
+{"id": "doc-1", "jsonData": "{\"title\":\"Heaven Resort\",\"category\":\"information\",\"rating\":4.8}", "content": {"mimeType": "application/pdf", "uri": "gs://qwiklabs-gcp-03-b157f92ecf3b/hotel1.pdf"}}
+{"id": "doc-2", "jsonData": "{\"title\":\"Paradise Reef Resort\",\"category\":\"information\",\"rating\":4.7}", "content": {"mimeType": "application/pdf", "uri": "gs://qwiklabs-gcp-03-b157f92ecf3b/hotel2.pdf"}}
+{"id": "doc-3", "jsonData": "{\"title\":\"AquaPulse Maldives\",\"category\":\"information\",\"rating\":4.0}", "content": {"mimeType": "application/pdf", "uri": "gs://qwiklabs-gcp-03-b157f92ecf3b/hotel3.pdf"}}
+{"id": "doc-4", "jsonData": "{\"title\":\"Heaven Resort Financials\",\"category\":\"financials\",\"rating\":4.8}", "content": {"mimeType": "application/pdf", "uri": "gs://qwiklabs-gcp-03-b157f92ecf3b/hotel1-financials.pdf"}}
+{"id": "doc-5", "jsonData": "{\"title\":\"Paradise Reef Resort Financials\",\"category\":\"financials\",\"rating\":4.7}", "content": {"mimeType": "application/pdf", "uri": "gs://qwiklabs-gcp-03-b157f92ecf3b/hotel2-financials.pdf"}}
+{"id": "doc-6", "jsonData": "{\"title\":\"AquaPulse Maldives Financials\",\"category\":\"financials\",\"rating\":4.0}", "content": {"mimeType": "application/pdf", "uri": "gs://qwiklabs-gcp-03-b157f92ecf3b/hotel3-financials.pdf"}}
+
 ```
 ```
 gsutil cp metadata.json gs://qwiklabs-gcp-04-38c23342abe4/metadata.json
