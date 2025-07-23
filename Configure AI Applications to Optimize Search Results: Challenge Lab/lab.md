@@ -55,7 +55,7 @@ We gratefully acknowledge Google's learning resources that make cloud education 
 ```
 gsutil cp metadata.json gs://qwiklabs-gcp-04-38c23342abe4/metadata.json
 ```
-
+```
 # *********************************************************
 #  Knowledge shared by Dr. Abhishek
 #  Please LIKE, SHARE, and SUBSCRIBE: 
