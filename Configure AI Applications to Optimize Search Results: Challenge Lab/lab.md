@@ -45,18 +45,32 @@ We gratefully acknowledge Google's learning resources that make cloud education 
 </div>
 
 ```
-{"id": "doc-1", "jsonData": "{\"title\":\"Heaven Resort\",\"category\":\"information\",\"rating\":4.8}", "content": {"mimeType": "application/pdf", "uri": "gs://qwiklabs-gcp-03-b157f92ecf3b/hotel1.pdf"}}
-{"id": "doc-2", "jsonData": "{\"title\":\"Paradise Reef Resort\",\"category\":\"information\",\"rating\":4.7}", "content": {"mimeType": "application/pdf", "uri": "gs://qwiklabs-gcp-03-b157f92ecf3b/hotel2.pdf"}}
-{"id": "doc-3", "jsonData": "{\"title\":\"AquaPulse Maldives\",\"category\":\"information\",\"rating\":4.0}", "content": {"mimeType": "application/pdf", "uri": "gs://qwiklabs-gcp-03-b157f92ecf3b/hotel3.pdf"}}
-{"id": "doc-4", "jsonData": "{\"title\":\"Heaven Resort Financials\",\"category\":\"financials\",\"rating\":4.8}", "content": {"mimeType": "application/pdf", "uri": "gs://qwiklabs-gcp-03-b157f92ecf3b/hotel1-financials.pdf"}}
-{"id": "doc-5", "jsonData": "{\"title\":\"Paradise Reef Resort Financials\",\"category\":\"financials\",\"rating\":4.7}", "content": {"mimeType": "application/pdf", "uri": "gs://qwiklabs-gcp-03-b157f92ecf3b/hotel2-financials.pdf"}}
-{"id": "doc-6", "jsonData": "{\"title\":\"AquaPulse Maldives Financials\",\"category\":\"financials\",\"rating\":4.0}", "content": {"mimeType": "application/pdf", "uri": "gs://qwiklabs-gcp-03-b157f92ecf3b/hotel3-financials.pdf"}}
+#!/bin/bash
 
-```
-```
-gsutil cp metadata.json gs://qwiklabs-gcp-04-38c23342abe4/metadata.json
-```
-```
+# Prompt for Project ID
+read -p "Enter your Google Cloud Project ID: " PROJECT_ID
+
+# Set the GCP project (optional but recommended)
+gcloud config set project "$PROJECT_ID"
+
+# Create metadata.json
+cat > metadata.json <<EOF
+{"id": "doc-1", "jsonData": "{\"title\":\"Heaven Resort\",\"category\":\"information\",\"rating\":4.8}", "content": {"mimeType": "application/pdf", "uri": "gs://\${PROJECT_ID}/hotel1.pdf"}}
+{"id": "doc-2", "jsonData": "{\"title\":\"Paradise Reef Resort\",\"category\":\"information\",\"rating\":4.7}", "content": {"mimeType": "application/pdf", "uri": "gs://\${PROJECT_ID}/hotel2.pdf"}}
+{"id": "doc-3", "jsonData": "{\"title\":\"AquaPulse Maldives\",\"category\":\"information\",\"rating\":4.0}", "content": {"mimeType": "application/pdf", "uri": "gs://\${PROJECT_ID}/hotel3.pdf"}}
+{"id": "doc-4", "jsonData": "{\"title\":\"Heaven Resort Financials\",\"category\":\"financials\",\"rating\":4.8}", "content": {"mimeType": "application/pdf", "uri": "gs://\${PROJECT_ID}/hotel1-financials.pdf"}}
+{"id": "doc-5", "jsonData": "{\"title\":\"Paradise Reef Resort Financials\",\"category\":\"financials\",\"rating\":4.7}", "content": {"mimeType": "application/pdf", "uri": "gs://\${PROJECT_ID}/hotel2-financials.pdf"}}
+{"id": "doc-6", "jsonData": "{\"title\":\"AquaPulse Maldives Financials\",\"category\":\"financials\",\"rating\":4.0}", "content": {"mimeType": "application/pdf", "uri": "gs://\${PROJECT_ID}/hotel3-financials.pdf"}}
+EOF
+
+# Replace placeholder with actual project ID
+sed -i "s/\\\${PROJECT_ID}/$PROJECT_ID/g" metadata.json
+
+# Upload to GCS bucket
+gsutil cp metadata.json gs://${PROJECT_ID}/metadata.json
+
+echo "metadata.json created and uploaded to gs://${PROJECT_ID}/metadata.json"
+
 # *********************************************************
 #  Knowledge shared by Dr. Abhishek
 #  Please LIKE, SHARE, and SUBSCRIBE: 
