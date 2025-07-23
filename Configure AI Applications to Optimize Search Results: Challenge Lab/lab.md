@@ -71,6 +71,39 @@ gsutil cp metadata.json gs://${PROJECT_ID}/metadata.json
 
 echo "metadata.json created and uploaded to gs://${PROJECT_ID}/metadata.json"
 
+```
+```
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+--member="user:$(gcloud config get-value account)" \
+--role="roles/discoveryengine.viewer"
+```
+# First authenticate and set your project
+gcloud auth login
+export PROJECT_ID="qwiklabs-gcp-00-b5e4dc0a1c2c"
+```
+# Search for information category documents
+curl -X POST \
+-H "Authorization: Bearer $(gcloud auth print-access-token)" \
+-H "Content-Type: application/json" \
+"https://discoveryengine.googleapis.com/v1alpha/projects/${PROJECT_ID}/locations/global/collections/default_collection/dataStores/cymbal-travel-datastore_1753256192715/servingConfigs/default_search:search" \
+-d '{
+"query": "What hotels are available in the Maldives?",
+"filter": "(category: ANY(\"information\"))",
+"pageSize": 10
+}'
+
+
+curl -X POST \
+-H "Authorization: Bearer $(gcloud auth print-access-token)" \
+-H "Content-Type: application/json" \
+"https://discoveryengine.googleapis.com/v1alpha/projects/${PROJECT_ID}/locations/global/collections/default_collection/dataStores/cymbal-travel-datastore_1753256192715/servingConfigs/default_search:search" \
+-d '{
+"query": "What is the revenue for the hotels in the Maldives?",
+"filter": "(category: ANY(\"financials\"))",
+"pageSize": 10
+}'
+```
+```
 # *********************************************************
 #  Knowledge shared by Dr. Abhishek
 #  Please LIKE, SHARE, and SUBSCRIBE: 
