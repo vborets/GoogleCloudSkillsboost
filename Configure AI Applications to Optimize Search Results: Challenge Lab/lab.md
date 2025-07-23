@@ -77,9 +77,11 @@ gcloud projects add-iam-policy-binding ${PROJECT_ID} \
 --member="user:$(gcloud config get-value account)" \
 --role="roles/discoveryengine.viewer"
 ```
+```
 # First authenticate and set your project
 gcloud auth login
-export PROJECT_ID="qwiklabs-gcp-00-b5e4dc0a1c2c"
+export PROJECT_ID=""
+```
 ```
 # Search for information category documents
 curl -X POST \
