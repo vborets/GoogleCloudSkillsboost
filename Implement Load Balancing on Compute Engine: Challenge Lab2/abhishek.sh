@@ -1,115 +1,124 @@
 #!/bin/bash
 
-# ==============================================
-#  Google Cloud Load Balancer Setup 
-#  Created by Dr. Abhishek Cloud Tutorials
-#  YouTube: https://www.youtube.com/@drabhishek.5460
-# ==============================================
-
-# Text styles and colors
-YELLOW=$(tput setaf 3)
-GREEN=$(tput setaf 2)
-BLUE=$(tput setaf 4)
-MAGENTA=$(tput setaf 5)
-BOLD=$(tput bold)
-RESET=$(tput sgr0)
-
-# Welcome Banner
-echo
-echo "${BLUE}${BOLD}╔══════════════════════════════════════════╗${RESET}"
-echo "${BLUE}${BOLD}║   WELCOME TO DR. ABHISHEK CLOUD TUTORIALS ║${RESET}"
-echo "${BLUE}${BOLD}╚══════════════════════════════════════════╝${RESET}"
-echo
-echo "${MAGENTA}Thank you for using our Google Cloud setup script!${RESET}"
-echo "${YELLOW}Please like the video and subscribe to our channel:${RESET}"
-echo "${BLUE}https://www.youtube.com/@drabhishek.5460/videos${RESET}"
-echo
-echo "${GREEN}Starting load balancer configuration...${RESET}"
-echo
-
-# Prompt user for region and zone
-read -p "${YELLOW}Enter the region (e.g., us-central1): ${RESET}" REGION
-read -p "${YELLOW}Enter the zone (e.g., us-central1-f): ${RESET}" ZONE
-
-# Set the default region and zone
-echo "${GREEN}Setting default region and zone...${RESET}"
-gcloud config set compute/region $REGION
-gcloud config set compute/zone $ZONE
-
-echo "${GREEN}✓ Region set to: $REGION${RESET}"
-echo "${GREEN}✓ Zone set to: $ZONE${RESET}"
-echo
-
-# Task 2. Create multiple web server instances
-echo "${BLUE}${BOLD}Creating web server instances...${RESET}"
-
-create_vm() {
-  local vm_name=$1
-  local zone=$2
-  
-  echo "${YELLOW}Creating instance: $vm_name in zone: $zone${RESET}"
-  gcloud compute instances create $vm_name \
-    --zone=$zone \
-    --tags=network-lb-tag \
-    --machine-type=e2-small \
-    --image-family=debian-11 \
-    --image-project=debian-cloud \
-    --metadata=startup-script='#!/bin/bash
-      apt-get update
-      apt-get install apache2 -y
-      service apache2 restart
-      echo "<h3>Web Server: '$vm_name'</h3>" | tee /var/www/html/index.html'
-  
-  echo "${GREEN}✓ Instance $vm_name created successfully${RESET}"
+# Function to show spinner while commands run
+spinner() {
+    local pid=$!
+    local delay=0.25
+    local spinstr='|/-\'
+    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+        local temp=${spinstr#?}
+        printf " [%c]  " "$spinstr"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b"
+    done
+    printf "    \b\b\b\b"
 }
 
-create_vm web1 $ZONE
-create_vm web2 $ZONE
-create_vm web3 $ZONE
+# Welcome message
+echo "============================================="
+echo " Welcome to Dr. Abhishek Cloud Tutorials!    "
+echo "============================================="
+echo " Setting up Network and HTTP Load Balancers  "
+echo " Please like the video and subscribe to the  "
+echo " channel if you find this content helpful.   "
+echo "---------------------------------------------"
+echo ""
+
+# Fetch zone and region with fallback to prompt
+echo -n "Detecting default zone and region... "
+ZONE=$(gcloud compute project-info describe \
+  --format="value(commonInstanceMetadata.items[google-compute-default-zone])" 2>/dev/null)
+REGION=$(gcloud compute project-info describe \
+  --format="value(commonInstanceMetadata.items[google-compute-default-region])" 2>/dev/null)
+PROJECT_ID=$(gcloud config get-value project 2>/dev/null)
+spinner
+
+if [ -z "$ZONE" ]; then
+    echo "Could not detect default zone."
+    echo "Please enter your preferred zone (e.g., us-central1-a):"
+    read -p "Zone: " ZONE
+    REGION=${ZONE%-*}
+else
+    echo "Detected Zone: $ZONE"
+    echo "Detected Region: $REGION"
+fi
+echo ""
+
+# Create web instances
+echo "Creating web instances (web1, web2, web3)..."
+for i in {1..3}; do
+    echo -n "Creating web$i... "
+    gcloud compute instances create web$i \
+        --zone=$ZONE \
+        --machine-type=e2-small \
+        --tags=network-lb-tag \
+        --image-family=debian-11 \
+        --image-project=debian-cloud \
+        --metadata=startup-script='#!/bin/bash
+        apt-get update
+        apt-get install apache2 -y
+        service apache2 restart
+        echo "<h3>Web Server: web'$i'</h3>" | tee /var/www/html/index.html' > /dev/null 2>&1 &
+    spinner
+    echo "Done"
+done
+echo ""
 
 # Create firewall rule
-echo "${BLUE}${BOLD}Creating firewall rule...${RESET}"
+echo -n "Creating firewall rule for network load balancer... "
 gcloud compute firewall-rules create www-firewall-network-lb \
-    --target-tags network-lb-tag --allow tcp:80
-echo "${GREEN}✓ Firewall rule created${RESET}"
+    --allow tcp:80 \
+    --target-tags network-lb-tag > /dev/null 2>&1 &
+spinner
+echo "Done"
+echo ""
 
-# Verify instances
-echo "${BLUE}${BOLD}Listing instances...${RESET}"
-gcloud compute instances list
-
-# Task 2. Configure the load balancing service
-echo "${BLUE}${BOLD}Configuring network load balancing service...${RESET}"
-
-# Create static IP address with specified name
+# Network Load Balancer Setup
+echo "Setting up Network Load Balancer..."
+echo -n "Creating static IP address... "
 gcloud compute addresses create network-lb-ip-1 \
-  --region $REGION
+    --region=$REGION > /dev/null 2>&1 &
+spinner
+echo "Done"
 
-# Create target pool with specified name
+echo -n "Creating health check... "
+gcloud compute http-health-checks create basic-check > /dev/null 2>&1 &
+spinner
+echo "Done"
+
+echo -n "Creating target pool... "
 gcloud compute target-pools create www-pool \
-  --region $REGION
+    --region=$REGION \
+    --http-health-check basic-check > /dev/null 2>&1 &
+spinner
+echo "Done"
 
-# Add instances to target pool
+echo -n "Adding instances to target pool... "
 gcloud compute target-pools add-instances www-pool \
-  --instances web1,web2,web3 \
-  --instances-zone $ZONE
+    --instances web1,web2,web3 \
+    --zone=$ZONE > /dev/null 2>&1 &
+spinner
+echo "Done"
 
-# Create forwarding rule with specified values
+echo -n "Creating forwarding rule... "
 gcloud compute forwarding-rules create www-rule \
-  --region $REGION \
-  --ports 80 \
-  --address network-lb-ip-1 \
-  --target-pool www-pool
+    --region=$REGION \
+    --ports 80 \
+    --address network-lb-ip-1 \
+    --target-pool www-pool > /dev/null 2>&1 &
+spinner
+echo "Done"
 
-# Get the load balancer IP
-LB_IP=$(gcloud compute addresses describe network-lb-ip-1 \
-  --region $REGION \
-  --format='value(address)')
-echo "${GREEN}✓ Network Load Balancer IP: $LB_IP${RESET}"
+IPADDRESS=$(gcloud compute forwarding-rules describe www-rule \
+    --region=$REGION \
+    --format="json" | jq -r .IPAddress)
+echo "Network Load Balancer IP: $IPADDRESS"
+echo ""
 
-# Task 3. Create an Application Load Balancer
-echo "${BLUE}${BOLD}Creating application load balancer components...${RESET}"
-
-# Create load balancer template
+# HTTP Load Balancer Setup
+echo "Setting up HTTP Load Balancer..."
+echo -n "Creating instance template... "
 gcloud compute instance-templates create lb-backend-template \
    --region=$REGION \
    --network=default \
@@ -127,74 +136,94 @@ gcloud compute instance-templates create lb-backend-template \
      http://169.254.169.254/computeMetadata/v1/instance/name)"
      echo "Page served from: $vm_hostname" | \
      tee /var/www/html/index.html
-     systemctl restart apache2'
+     systemctl restart apache2' > /dev/null 2>&1 &
+spinner
+echo "Done"
 
-# Create managed instance group
+echo -n "Creating managed instance group... "
 gcloud compute instance-groups managed create lb-backend-group \
-   --template=lb-backend-template --size=2 --zone=$ZONE
+   --template=lb-backend-template \
+   --size=2 \
+   --zone=$ZONE > /dev/null 2>&1 &
+spinner
+echo "Done"
 
-# Create health check firewall rule
+echo -n "Creating health check firewall rule... "
 gcloud compute firewall-rules create fw-allow-health-check \
   --network=default \
   --action=allow \
   --direction=ingress \
   --source-ranges=130.211.0.0/22,35.191.0.0/16 \
   --target-tags=allow-health-check \
-  --rules=tcp:80
+  --rules=tcp:80 > /dev/null 2>&1 &
+spinner
+echo "Done"
 
-# Create static IP address for application LB
+echo -n "Creating global IPv4 address... "
 gcloud compute addresses create lb-ipv4-1 \
   --ip-version=IPV4 \
-  --global
+  --global > /dev/null 2>&1 &
+spinner
+echo "Done"
 
-# Get the reserved IP address
-APP_LB_IP=$(gcloud compute addresses describe lb-ipv4-1 \
+LB_IP=$(gcloud compute addresses describe lb-ipv4-1 \
   --format="get(address)" \
   --global)
-echo "${GREEN}✓ Application Load Balancer IP: $APP_LB_IP${RESET}"
+echo "HTTP Load Balancer IP: $LB_IP"
 
-# Create health check
+echo -n "Creating HTTP health check... "
 gcloud compute health-checks create http http-basic-check \
-  --port 80
+  --port 80 > /dev/null 2>&1 &
+spinner
+echo "Done"
 
-# Create backend service
+echo -n "Creating backend service... "
 gcloud compute backend-services create web-backend-service \
   --protocol=HTTP \
   --port-name=http \
   --health-checks=http-basic-check \
-  --global
+  --global > /dev/null 2>&1 &
+spinner
+echo "Done"
 
-# Add backend to the service
+echo -n "Adding backend to service... "
 gcloud compute backend-services add-backend web-backend-service \
   --instance-group=lb-backend-group \
   --instance-group-zone=$ZONE \
-  --global
+  --global > /dev/null 2>&1 &
+spinner
+echo "Done"
 
-# Create URL map
+echo -n "Creating URL map... "
 gcloud compute url-maps create web-map-http \
-    --default-service web-backend-service
+    --default-service web-backend-service > /dev/null 2>&1 &
+spinner
+echo "Done"
 
-# Create target HTTP proxy
+echo -n "Creating target HTTP proxy... "
 gcloud compute target-http-proxies create http-lb-proxy \
-    --url-map web-map-http
+    --url-map web-map-http > /dev/null 2>&1 &
+spinner
+echo "Done"
 
-# Create forwarding rule
+echo -n "Creating forwarding rule... "
 gcloud compute forwarding-rules create http-content-rule \
-   --address=lb-ipv4-1 \
-   --global \
-   --target-http-proxy=http-lb-proxy \
-   --ports=80
+    --address=lb-ipv4-1 \
+    --global \
+    --target-http-proxy=http-lb-proxy \
+    --ports=80 > /dev/null 2>&1 &
+spinner
+echo "Done"
+echo ""
 
-# Final output
-echo
-echo "${BLUE}${BOLD}╔══════════════════════════════════════════╗${RESET}"
-echo "${BLUE}${BOLD}║        SETUP COMPLETED SUCCESSFULLY      ║${RESET}"
-echo "${BLUE}${BOLD}╚══════════════════════════════════════════╝${RESET}"
-echo
-echo "${GREEN}Network Load Balancer IP: http://$LB_IP${RESET}"
-echo "${GREEN}Application Load Balancer IP: http://$APP_LB_IP${RESET}"
-echo
-echo "${YELLOW}Thank you !${RESET}"
-echo "${MAGENTA}Please like and subscribe for more cloud tutorials:${RESET}"
-echo "${BLUE}https://www.youtube.com/@drabhishek.5460/videos${RESET}"
-echo
+# Completion message
+echo "============================================="
+echo " Setup Complete!                            "
+echo "============================================="
+echo " Network Load Balancer IP: $IPADDRESS"
+echo " HTTP Load Balancer IP: $LB_IP"
+echo ""
+echo " Thank you for following along with Dr. Abhishek's"
+echo " Cloud Tutorial! Don't forget to like the video"
+echo " and subscribe to the channel for more content!"
+echo "============================================="
