@@ -1,4 +1,5 @@
-## Configure AI Applications to Optimize Search Results: Challenge Lab
+## Enhance Gemini with access to external services with function calling: Challenge Lab
+
 
 
 ### ⚠️ **Disclaimer**  
