@@ -83,26 +83,43 @@ gcloud auth login
 export PROJECT_ID=""
 ```
 ```
-# Search for information category documents
-curl -X POST \
--H "Authorization: Bearer $(gcloud auth print-access-token)" \
+curl -X POST -H "Authorization: Bearer $(gcloud auth print-access-token)" \
 -H "Content-Type: application/json" \
-"https://discoveryengine.googleapis.com/v1alpha/projects/${PROJECT_ID}/locations/global/collections/default_collection/dataStores/cymbal-travel-datastore_1753256192715/servingConfigs/default_search:search" \
+"https://discoveryengine.googleapis.com/v1alpha/projects/467352334122/locations/global/collections/default_collection/engines/cymbal-hotels_1753364142024/servingConfigs/default_search:search" \
 -d '{
 "query": "What hotels are available in the Maldives?",
-"filter": "(category: ANY(\"information\"))",
-"pageSize": 10
-}'
-
-
-curl -X POST \
--H "Authorization: Bearer $(gcloud auth print-access-token)" \
--H "Content-Type: application/json" \
-"https://discoveryengine.googleapis.com/v1alpha/projects/${PROJECT_ID}/locations/global/collections/default_collection/dataStores/cymbal-travel-datastore_1753256192715/servingConfigs/default_search:search" \
--d '{
-"query": "What is the revenue for the hotels in the Maldives?",
-"filter": "(category: ANY(\"financials\"))",
-"pageSize": 10
+"pageSize": 10,
+"filter": "category: ANY(\"information\")",
+"queryExpansionSpec": {
+"condition": "AUTO"
+},
+"spellCorrectionSpec": {
+"mode": "AUTO"
+},
+"relevanceScoreSpec": {
+"returnRelevanceScore": true
+},
+"languageCode": "en-US",
+"contentSearchSpec": {
+"extractiveContentSpec": {
+"maxExtractiveAnswerCount": 1
+}
+},
+"facetSpecs": [
+{
+"facetKey": {
+"key": "category"
+},
+"limit": 30
+}
+],
+"naturalLanguageQueryUnderstandingSpec": {
+"filterExtractionCondition": "ENABLED"
+},
+"userInfo": {
+"timeZone": "Asia/Calcutta"
+},
+"session": "projects/467352334122/locations/global/collections/default_collection/engines/cymbal-hotels_1753364142024/sessions/-"
 }'
 ```
 ```
