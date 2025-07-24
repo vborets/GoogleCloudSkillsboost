@@ -45,15 +45,6 @@ We gratefully acknowledge Google's learning resources that make cloud education 
 </div>
 
 ````
-from vertexai.generative_models import (
-    FunctionDeclaration,
-    Tool,
-    GenerativeModel,
-    GenerationConfig,
-    Content,
-    Part,
-)
-
 # Define a function to add two numerical inputs and return the result.
 def add_numbers(a: float, b: float) -> float:
     print("Calling add function")
@@ -114,102 +105,56 @@ chat = model.start_chat()
 def handle_response(response):
     # If there is a function call then invoke it
     # Otherwise print the response.
-    if not response.candidates:
-        print("No response from model")
+    if response.candidates[0].function_calls:
+        function_call = response.candidates[0].function_calls[0]
+    else:
+        print(response.text)
         return
-        
-    candidate = response.candidates[0]
-    
-    if candidate.content.parts[0].text:
-        print(candidate.content.parts[0].text)
-        return
-        
-    if candidate.function_calls:
-        for function_call in candidate.function_calls:
-            if function_call.name == "add_numbers":
-                # Extract the arguments to use in your function
-                a = function_call.args["a"]
-                b = function_call.args["b"]
-                # Call your function
-                result = add_numbers(a, b)
-                # Send the result back to the chat session with the model
-                response = chat.send_message(
-                    Content(role="user", parts=[Part.from_function_response(
-                        name=function_call.name,
-                        response={"result": result}
-                    )])
-                )
-                # Make a recursive call of this handler function
-                handle_response(response)
 
-            elif function_call.name == "multiply_numbers":
-                # Extract the arguments to use in your function
-                a = function_call.args["a"]
-                b = function_call.args["b"]
-                # Call your function
-                result = multiply_numbers(a, b)
-                # Send the result back to the chat session with the model
-                response = chat.send_message(
-                    Content(role="user", parts=[Part.from_function_response(
-                        name=function_call.name,
-                        response={"result": result}
-                    )])
-                )
-                # Make a recursive call of this handler function
-                handle_response(response)
-            else:
-                # You shouldn't end up here
-                print(f"Unknown function call: {function_call.name}")
+    # Complete the following sections
+    if function_call.name == "add_numbers":
+        # Extract the arguments to use in your function
+        a = function_call.args["a"]
+        b = function_call.args["b"]
+        # Call your function
+        result = add_numbers(a, b)
+        # Send the result back to the chat session with the model
+        response = chat.send_message(
+            Content(role="user", parts=[Part.from_function_response(function_call.name, result)])
+        )
+        # Make a recursive call of this handler function
+        handle_response(response)
 
-# Test that the model responds with its own answer for non-math related questions
-print("Testing joke telling:")
-response = chat.send_message("Tell me a joke?")
-handle_response(response)
+    elif function_call.name == "multiply_numbers":
+        # Extract the arguments to use in your function
+        a = function_call.args["a"]
+        b = function_call.args["b"]
+        # Call your function
+        result = multiply_numbers(a, b)
+        # Send the result back to the chat session with the model
+        response = chat.send_message(
+            Content(role="user", parts=[Part.from_function_response(function_call.name, result)])
+        )
+        # Make a recursive call of this handler function
+        handle_response(response)
 
-# Test the model with pizza slices calculation
-print("\nTesting pizza slices calculation:")
-response = chat.send_message("I have 7 pizzas each with 16 slices. How many slices do I have?")
-handle_response(response)
-
-# Test addition of pizzas
-print("\nTesting pizza addition:")
-response = chat.send_message("Doug brought 3 pizzas. Andrew brought 4 pizzas. How many pizzas did they bring together?")
-handle_response(response)
-
-# Test combined addition and multiplication
-print("\nTesting combined operations:")
-response = chat.send_message("""Doug brought 3 pizzas. Andrew brought 4 pizzas. 
-                            There are 16 slices per pizza. How many slices are there?""")
-handle_response(response)
-
-# Test subtraction scenario
-print("\nTesting subtraction (should be handled by model, not functions):")
-response = chat.send_message("Doug brought 4 pizzas, but Andrew dropped 2 on the ground. How many pizzas are left?")
-handle_response(response)
+    else:
+        # You shouldn't end up here
+        print(function_call)
 ````
 
 
 ```
-from vertexai.generative_models import (
-    FunctionDeclaration,
-    Tool,
-    GenerativeModel,
-    GenerationConfig,
-    Content,
-    Part,
-)
-
-# Define a function to add two numerical inputs and return the result.
+# Define the functions with print statements as requested
 def add_numbers(a: float, b: float) -> float:
     print("Calling add function")
     return a + b
 
-# Define a function to multiply two numerical inputs and return the result.
 def multiply_numbers(a: float, b: float) -> float:
     print("Calling multiply function")
     return a * b
 
-# Create FunctionDeclarations for your functions
+# Create FunctionDeclarations with proper return types
 add_function = FunctionDeclaration(
     name="add_numbers",
     description="Adds two numbers",
@@ -221,6 +166,12 @@ add_function = FunctionDeclaration(
         },
         "required": ["a", "b"],
     },
+    returns={
+        "type": "object",
+        "properties": {
+            "result": {"type": "number", "description": "The sum of the two numbers"}
+        }
+    }
 )
 
 multiply_function = FunctionDeclaration(
@@ -234,102 +185,76 @@ multiply_function = FunctionDeclaration(
         },
         "required": ["a", "b"],
     },
+    returns={
+        "type": "object",
+        "properties": {
+            "result": {"type": "number", "description": "The product of the two numbers"}
+        }
+    }
 )
 
-# Define a math Tool with the add and multiply functions
+# Create the math tool
 math_tool = Tool(
     function_declarations=[add_function, multiply_function],
 )
 
-# Initialize the model with gemini-2.0-flash-001
+# Initialize the model
 model = GenerativeModel(
-    "gemini-2.0-flash-001",  # Updated model name
+    "gemini-1.0-pro",  # Using gemini-1.0-pro as it's more stable for function calling
     tools=[math_tool],
-    generation_config=GenerationConfig(temperature=0),
-    system_instruction="""Fulfill the user's instructions, including telling jokes.
-    If asked to add or multiply numbers, call the provided functions.
-    You may call one function after the other if needed.
-    Repeat the result to the user.""",
+    generation_config=GenerationConfig(temperature=0)
 )
 
-# Start a new chat
+# Start chat
 chat = model.start_chat()
 
-# Define function to handle the response from the model
+# Corrected handle_response function
 def handle_response(response):
-    # If there is a function call then invoke it
-    # Otherwise print the response.
-    if not response.candidates:
-        print("No response from model")
+    if not response.candidates or not response.candidates[0].content.parts:
+        print("No response received")
         return
         
-    candidate = response.candidates[0]
-    
-    if candidate.content.parts[0].text:
-        print(candidate.content.parts[0].text)
-        return
+    # Check for function calls
+    if hasattr(response.candidates[0], 'function_calls') and response.candidates[0].function_calls:
+        function_call = response.candidates[0].function_calls[0]
         
-    if candidate.function_calls:
-        for function_call in candidate.function_calls:
-            if function_call.name == "add_numbers":
-                # Extract the arguments to use in your function
-                a = function_call.args["a"]
-                b = function_call.args["b"]
-                # Call your function
-                result = add_numbers(a, b)
-                # Send the result back to the chat session with the model
-                response = chat.send_message(
-                    Content(role="user", parts=[Part.from_function_response(
+        if function_call.name == "add_numbers":
+            a = function_call.args["a"]
+            b = function_call.args["b"]
+            result = add_numbers(a, b)
+            response = chat.send_message(
+                Content(
+                    role="user",
+                    parts=[Part.from_function_response(
                         name=function_call.name,
-                        response={"result": result}
-                    )])
+                        response={"result": result}  # Must be a dictionary
+                    )]
                 )
-                # Make a recursive call of this handler function
-                handle_response(response)
-
-            elif function_call.name == "multiply_numbers":
-                # Extract the arguments to use in your function
-                a = function_call.args["a"]
-                b = function_call.args["b"]
-                # Call your function
-                result = multiply_numbers(a, b)
-                # Send the result back to the chat session with the model
-                response = chat.send_message(
-                    Content(role="user", parts=[Part.from_function_response(
+            )
+            handle_response(response)
+            
+        elif function_call.name == "multiply_numbers":
+            a = function_call.args["a"]
+            b = function_call.args["b"]
+            result = multiply_numbers(a, b)
+            response = chat.send_message(
+                Content(
+                    role="user",
+                    parts=[Part.from_function_response(
                         name=function_call.name,
-                        response={"result": result}
-                    )])
+                        response={"result": result}  # Must be a dictionary
+                    )]
                 )
-                # Make a recursive call of this handler function
-                handle_response(response)
-            else:
-                # You shouldn't end up here
-                print(f"Unknown function call: {function_call.name}")
+            )
+            handle_response(response)
+            
+    else:
+        # Print regular text response
+        print(response.text)
 
-# Test that the model responds with its own answer for non-math related questions
-print("Testing joke telling:")
-response = chat.send_message("Tell me a joke?")
-handle_response(response)
-
-# Test the model with pizza slices calculation
-print("\nTesting pizza slices calculation:")
+# Test with the specific prompt
+print("Testing with: 'I have 7 pizzas each with 16 slices. How many slices do I have?'")
 response = chat.send_message("I have 7 pizzas each with 16 slices. How many slices do I have?")
-handle_response(response)
-
-# Test addition of pizzas
-print("\nTesting pizza addition:")
-response = chat.send_message("Doug brought 3 pizzas. Andrew brought 4 pizzas. How many pizzas did they bring together?")
-handle_response(response)
-
-# Test combined addition and multiplication
-print("\nTesting combined operations:")
-response = chat.send_message("""Doug brought 3 pizzas. Andrew brought 4 pizzas. 
-                            There are 16 slices per pizza. How many slices are there?""")
-handle_response(response)
-
-# Test subtraction scenario
-print("\nTesting subtraction (should be handled by model, not functions):")
-response = chat.send_message("Doug brought 4 pizzas, but Andrew dropped 2 on the ground. How many pizzas are left?")
 handle_response(response)
 ```
 
