@@ -1,6 +1,6 @@
 
 ## Develop Solutions using Model Garden models and APIs: Challenge Lab
-
+## Do Like the Video And Subscribe The Channel 
 ### ⚠️ **Disclaimer**  
 
 <div style="background-color: #fff3cd; padding: 15px; border-left: 5px solid #ffc107; border-radius: 4px; margin: 20px 0;">
@@ -44,16 +44,134 @@ We gratefully acknowledge Google's learning resources that make cloud education 
 
 </div>
 
-```
+📌 Claude.py
+``````
 
-```
-```
-# *********************************************************
-#  Knowledge shared by Dr. Abhishek
-#  Please LIKE, SHARE, and SUBSCRIBE: 
-#  https://www.youtube.com/@drabhishek.5460/videos 
-# *********************************************************
-```
+
+import os
+from logs import write_log_entry
+from anthropic import AnthropicVertex
+
+project_id = os.environ['GOOGLE_CLOUD_PROJECT']
+region = os.environ['GOOGLE_CLOUD_CLAUDE_REGION']
+
+client = AnthropicVertex(region=region, project_id=project_id)
+
+def get_claude_response(models, prompt, output_area):
+    """Streams response from Claude model using Anthropic SDK."""
+    response = ""
+    system_msg = (
+        "You are a knowledgeable assistant for Cymbal Shop. "
+        "Be conversational but friendly. Don't recommend competing products."
+    )
+    messages = [{"role": "user", "content": prompt}]
+    
+    with client.messages.stream(
+        model=models['Claude'],
+        system=system_msg,
+        messages=messages,
+        max_tokens=2048
+    ) as stream:
+        for chunk in stream.text_stream:
+            write_log_entry(models['Claude'], prompt, chunk)
+            response += chunk
+            output_area.markdown(response, unsafe_allow_html=True)
+    
+    return response
+
+``````
+
+📌 llama.py
+`````
+import streamlit as st
+import os
+from logs import write_log_entry
+
+import openai
+from google.auth import default, transport
+
+project_id = os.environ['GOOGLE_CLOUD_PROJECT']
+region = os.environ['GOOGLE_CLOUD_REGION']
+
+def get_llama_response(models, prompt, output_area):
+    """Streams response from Llama model using OpenAI-compatible SDK."""
+
+    # Set up Google Cloud credentials and refresh token
+    credentials, _ = default()
+    auth_request = transport.requests.Request()
+    credentials.refresh(auth_request)
+
+    # Construct base URL for Vertex AI OpenAI-compatible endpoint
+    client = openai.OpenAI(
+        base_url=f"https://{region}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{region}/endpoints/openapi/chat/completions?",
+        api_key=credentials.token,
+    )
+
+    system_msg = {
+        "role": "system",
+        "content": (
+            "You are the Cymbal Generative AI Chatbot. You provide clear, accurate, "
+            "and professional responses. Use step-by-step reasoning if prompted."
+        )
+    }
+    welcome_msg = {"role": "assistant", "content": "Hi! I'm the Cymbal Chatbot. How can I help you?"}
+    user_msg = {"role": "user", "content": prompt}
+    messages = [system_msg, welcome_msg, user_msg]
+
+    # Pass all necessary parameters for streaming chat completion
+    stream = client.chat.completions.create(
+    model=models['Llama'],
+    messages=messages,
+    stream=True,            # Optional, only if you want streaming
+    temperature=0.2,
+    max_tokens=1024
+)
+
+
+    response = ""
+    for chunk in stream:
+        content = chunk.choices[0].delta.content
+        if content:
+            write_log_entry(models['Llama'], prompt, content)
+            response += content
+            output_area.markdown(response, unsafe_allow_html=True)
+
+`````
+📌 model_garden_challenge_notebook.ipynb
+````
+from google.cloud import aiplatform
+import logging
+
+prompt = "Write a function to list n Fibonacci numbers in Python."
+
+endpoint = aiplatform.Endpoint(
+    endpoint_name="projects/1096797455311/locations/us-central1/endpoints/5062324157606264832"
+)
+
+instances = [
+    {"prompt": prompt}
+]
+
+parameters = {
+    "temperature": 1.0,
+    "maxOutputTokens": 500,
+    "topP": 1.0,
+    "topK": 1,
+}
+
+# Make prediction call
+response = endpoint.predict(instances=instances, parameters=parameters)
+
+# Print response
+for prediction in response.predictions:
+    print(prediction.split("<|file_separator|>")[0])
+
+print("Deployed model ID:", response.deployed_model_id)
+
+# Logging
+logging.info(f"Fibonacci function: {response}")
+
+````
 <div align="center">
 
 <h3>🌟 Connect with fellow cloud enthusiasts, ask questions, and share your learning journey! 🌟</h3>
