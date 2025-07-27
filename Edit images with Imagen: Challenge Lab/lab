@@ -1,0 +1,294 @@
+# Imagen 3 Image Editing - Complete Solution
+from google import genai
+from google.genai.types import (
+    Image,
+    EditImageConfig,
+    RawReferenceImage,
+    MaskReferenceImage,
+    MaskReferenceConfig,
+)
+
+import image_editing_utils
+
+# Task 1: Prepare the Environment
+def task1():
+    print("Running Task 1: Prepare the environment...")
+    # Download files
+    !gcloud storage cp gs://Project ID-bucket/empty-bowl-on-empty-table.png .
+    !gcloud storage cp gs://Project ID-bucket/image_editing_utils.py .
+    !gcloud storage cp gs://Project ID-bucket/place-setting-mask.png .
+    
+    # Initialize client
+    PROJECT_ID = "Project ID"
+    LOCATION = "Region"
+    gcs_bucket = "GCS Bucket Name-bucket"
+    
+    client = genai.Client(
+        vertexai=True,
+        project=PROJECT_ID,
+        location=LOCATION
+    )
+    
+    # Load and display original image
+    original_image = Image.from_file(
+        location="empty-bowl-on-empty-table.png",
+        mime_type="image/png"
+    )
+    original_image.show()
+    
+    # Save and upload original image
+    dest_filename = "empty-bowl-on-empty-table-copy.png"
+    original_image.save(dest_filename)
+    image_editing_utils.upload_file_to_gcs(
+        gcs_bucket, dest_filename, dest_filename)
+    
+    return client, original_image, gcs_bucket
+
+# Task 2: Use outpainting to expand image aspect ratio
+def task2(client, original_image, gcs_bucket):
+    print("\nRunning Task 2: Outpainting to expand image...")
+    edit_model_name = "imagen-3.0-capability-001"
+    
+    # Prepare image and mask for outpainting
+    target_image_size = (1408, 768)
+    reframed_image, reframed_mask = image_editing_utils.pad_and_mask_image(
+        original_image=original_image,
+        target_size=target_image_size,
+        vertical_offset_from_bottom=0.5,
+        horizontal_offset_from_left=0.1,
+    )
+    
+    # Create reference images
+    raw_ref_image = RawReferenceImage(
+        reference_image=reframed_image,
+        reference_id=0
+    )
+    
+    mask_ref_image = MaskReferenceImage(
+        reference_image=reframed_mask,
+        reference_id=1,
+        mask_config=MaskReferenceConfig(
+            mask_source="USER_PROVIDED"
+        )
+    )
+    
+    # Perform outpainting
+    outpainted_image = client.models.edit_image(
+        model=edit_model_name,
+        prompt="",
+        reference_images=[raw_ref_image, mask_ref_image],
+        config=EditImageConfig(
+            edit_mode="OUTPAINTING",
+            number_of_images=1,
+            base_steps=35,
+            safety_filter_level="BLOCK_ONLY_HIGH",
+        ),
+    )
+    outpainted_image.generated_images[0].image.show()
+    
+    # Save and upload result
+    filename = "empty-bowl-on-long-table.png"
+    outpainted_image.generated_images[0].image.save(filename)
+    image_editing_utils.upload_file_to_gcs(gcs_bucket, filename, filename)
+    
+    return outpainted_image
+
+# Task 3: Use mask-free editing to add grapes
+def task3(client, outpainted_image, gcs_bucket):
+    print("\nRunning Task 3: Adding grapes with mask-free editing...")
+    raw_ref_image = RawReferenceImage(
+        reference_image=outpainted_image.generated_images[0].image,
+        reference_id=0
+    )
+    
+    # Perform mask-free edit
+    edit_prompt = "photoreal wet grapes added to the ceramic bowl[0]."
+    edited_image = client.models.edit_image(
+        model="imagen-3.0-capability-001",
+        prompt=edit_prompt,
+        reference_images=[raw_ref_image],
+        config=EditImageConfig(
+            edit_mode="MASK_FREE",
+            base_steps=35,
+            number_of_images=1,
+            safety_filter_level="BLOCK_MEDIUM_AND_ABOVE",
+        ),
+    )
+    edited_image.generated_images[0].image.show()
+    
+    # Save and upload result
+    filename = "grapes-in-bowl-on-long-table.png"
+    edited_image.generated_images[0].image.save(filename)
+    image_editing_utils.upload_file_to_gcs(gcs_bucket, filename, filename)
+    
+    return edited_image
+
+# Task 4: Use inpainting to insert objects
+def task4(client, edited_image, gcs_bucket):
+    print("\nRunning Task 4: Adding table setting with inpainting...")
+    raw_ref_image = RawReferenceImage(
+        reference_image=edited_image.generated_images[0].image,
+        reference_id=0
+    )
+    
+    # Load and configure mask
+    place_setting_mask = Image.from_file(location="place-setting-mask.png")
+    mask_ref_image = MaskReferenceImage(
+        reference_image=place_setting_mask,
+        reference_id=1,
+        mask_config=MaskReferenceConfig(
+            mask_source="USER_PROVIDED"
+        )
+    )
+    
+    # Perform inpainting
+    edit_prompt = "a fork on a napkin and a plate on the rustic table[1]"
+    inpainted_image = client.models.edit_image(
+        model="imagen-3.0-capability-001",
+        prompt=edit_prompt,
+        reference_images=[raw_ref_image, mask_ref_image],
+        config=EditImageConfig(
+            edit_mode="INPAINTING_INSERT",
+            number_of_images=1,
+            safety_filter_level="BLOCK_MEDIUM_AND_ABOVE",
+        ),
+    )
+    inpainted_image.generated_images[0].image.show()
+    
+    # Save and upload result
+    filename = "grapes-and-table-setting-on-long-table.png"
+    inpainted_image.generated_images[0].image.save(filename)
+    image_editing_utils.upload_file_to_gcs(gcs_bucket, filename, filename)
+    
+    return inpainted_image
+
+# Task 5: Clear the table with inpainting removal
+def task5(client, inpainted_image, gcs_bucket):
+    print("\nRunning Task 5: Removing foreground objects...")
+    raw_ref_image = RawReferenceImage(
+        reference_image=inpainted_image.generated_images[0].image,
+        reference_id=0
+    )
+    
+    # Configure automatic foreground detection
+    mask_ref_image = MaskReferenceImage(
+        reference_image=None,
+        reference_id=1,
+        mask_config=MaskReferenceConfig(
+            mask_source="AUTODETECT",
+            mask_mode="FOREGROUND"
+        )
+    )
+    
+    # Perform removal
+    edit_prompt = ""
+    foreground_removed_image = client.models.edit_image(
+        model="imagen-3.0-capability-001",
+        prompt=edit_prompt,
+        reference_images=[raw_ref_image, mask_ref_image],
+        config=EditImageConfig(
+            edit_mode="INPAINTING_REMOVE",
+            number_of_images=1,
+            safety_filter_level="BLOCK_MEDIUM_AND_ABOVE",
+        ),
+    )
+    foreground_removed_image.generated_images[0].image.show()
+    
+    # Save and upload result
+    filename = "empty-table.png"
+    foreground_removed_image.generated_images[0].image.save(filename)
+    image_editing_utils.upload_file_to_gcs(gcs_bucket, filename, filename)
+    
+    return foreground_removed_image
+
+# Task 6: Create neutral background
+def task6(client, original_image, gcs_bucket):
+    print("\nRunning Task 6: Creating neutral background...")
+    raw_ref_image = RawReferenceImage(
+        reference_image=original_image,
+        reference_id=0
+    )
+    
+    # Configure table segmentation (class ID 47 for table)
+    mask_ref_image = MaskReferenceImage(
+        reference_image=None,
+        reference_id=1,
+        mask_config=MaskReferenceConfig(
+            mask_source="AUTODETECT",
+            mask_mode="SEMANTIC",
+            class_ids=[47]  # Table class ID
+        )
+    )
+    
+    # Perform removal
+    edit_prompt = ""
+    neutral_surface_image = client.models.edit_image(
+        model="imagen-3.0-capability-001",
+        prompt=edit_prompt,
+        reference_images=[raw_ref_image, mask_ref_image],
+        config=EditImageConfig(
+            edit_mode="INPAINTING_REMOVE",
+            number_of_images=1,
+            safety_filter_level="BLOCK_MEDIUM_AND_ABOVE",
+        ),
+    )
+    neutral_surface_image.generated_images[0].image.show()
+    
+    # Save and upload result
+    filename = "bowl-on-neutral-surface.png"
+    neutral_surface_image.generated_images[0].image.save(filename)
+    image_editing_utils.upload_file_to_gcs(gcs_bucket, filename, filename)
+    
+    return neutral_surface_image
+
+# Task 7: Swap background to party scene
+def task7(client, original_image, gcs_bucket):
+    print("\nRunning Task 7: Creating party background...")
+    raw_ref_image = RawReferenceImage(
+        reference_image=original_image,
+        reference_id=0
+    )
+    
+    # Configure background detection
+    mask_ref_image = MaskReferenceImage(
+        reference_image=None,
+        reference_id=1,
+        mask_config=MaskReferenceConfig(
+            mask_source="AUTODETECT",
+            mask_mode="BACKGROUND"
+        )
+    )
+    
+    # Perform background edit
+    edit_prompt = "A bowl on a table at a fun dinner party"
+    dinner_party_image = client.models.edit_image(
+        model="imagen-3.0-capability-001",
+        prompt=edit_prompt,
+        reference_images=[raw_ref_image, mask_ref_image],
+        config=EditImageConfig(
+            edit_mode="PRODUCT_BACKGROUND_EDIT",
+            number_of_images=1,
+            safety_filter_level="BLOCK_MEDIUM_AND_ABOVE",
+        ),
+    )
+    dinner_party_image.generated_images[0].image.show()
+    
+    # Save and upload result
+    filename = "bowl-at-a-party.png"
+    dinner_party_image.generated_images[0].image.save(filename)
+    image_editing_utils.upload_file_to_gcs(gcs_bucket, filename, filename)
+    
+    return dinner_party_image
+
+# Main execution
+if __name__ == "__main__":
+    # Run all tasks in sequence
+    client, original_image, gcs_bucket = task1()
+    outpainted_image = task2(client, original_image, gcs_bucket)
+    edited_image = task3(client, outpainted_image, gcs_bucket)
+    inpainted_image = task4(client, edited_image, gcs_bucket)
+    foreground_removed_image = task5(client, inpainted_image, gcs_bucket)
+    neutral_surface_image = task6(client, original_image, gcs_bucket)
+    dinner_party_image = task7(client, original_image, gcs_bucket)
+    
+    print("\nAll tasks completed successfully!")
