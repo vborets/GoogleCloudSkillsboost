@@ -46,8 +46,22 @@ We gratefully acknowledge Google's learning resources that make cloud education 
 
 📌 Activate Cloud Shell & Paste Over There
 ```
-
+curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Automate%20Data%20Capture%20at%20Scale%20with%20Document%20AI%20Challenge%20Lab/abhishek.sh
+sudo chmod +x abhishek.sh
+./abhishek.sh
 ````
+### 🚨If you're not getting score on task 5 then run the below commands few times
+
+```
+
+export PROJECT_ID=$(gcloud config get-value core/project)
+gsutil -m cp -r gs://cloud-training/gsp367/* \
+~/document-ai-challenge/invoices gs://${PROJECT_ID}-input-invoices/
+```
+
+
+
+
 <div align="center">
 
 <h3>🌟 Connect with fellow cloud enthusiasts, ask questions, and share your learning journey! 🌟</h3>
