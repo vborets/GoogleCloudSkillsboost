@@ -51,11 +51,35 @@ gcloud firestore indexes composite create \
   --collection-group=food-safety \
   --query-scope=COLLECTION \
   --field-config=vector-config='{"dimension":"768","flat": "{}"}',field-path=embedding
+```
+```
+def search_vector_database(query: str):
+    query_embedding = embedding_model.embed_query(query)
+    query_vector = Vector(query_embedding)
+    docs = collection.find_nearest(
+        "embedding",
+        query_vector=query_vector,
+        distance_measure=DistanceMeasure.DOT_PRODUCT,
+        limit=5
+    ).get()
+    
+    pieces = []
+    for doc in docs:
+        data = doc.to_dict()
+        if "content" in data:
+            pieces.append(data["content"])
+    
+    context = "\n".join(pieces)
+    return context
 
+# Test the function
+result = search_vector_database("How should I store food?")
+print(result)
+```
 
 ```
 - Mainfile
-
+```
 ```
 import os
 import yaml
