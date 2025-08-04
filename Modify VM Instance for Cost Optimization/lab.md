@@ -1,4 +1,5 @@
-## Configure AI Applications to Optimize Search Results: Challenge Lab
+## Modify VM Instance for Cost Optimization
+
 
 
 ### ⚠️ **Disclaimer**  
