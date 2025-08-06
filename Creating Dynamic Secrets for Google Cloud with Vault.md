@@ -48,9 +48,6 @@ We gratefully acknowledge Google's learning resources that make cloud education 
 </div>
 
 ```
-
-
-
 gcloud auth list
 
 export PROJECT_ID=$(gcloud config get-value project)
@@ -202,10 +199,6 @@ vault write gcp/roleset/my-token-roleset \
     secret_type="access_token"  \
     token_scopes="https://www.googleapis.com/auth/cloud-platform" \
     bindings=@bindings.hcl
-
-
-    
-
 ```
 
 
