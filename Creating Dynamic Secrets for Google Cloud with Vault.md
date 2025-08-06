@@ -50,19 +50,25 @@ We gratefully acknowledge Google's learning resources that make cloud education 
 ```
 
 
+
 gcloud auth list
+
+export PROJECT_ID=$(gcloud config get-value project)
+export PROJECT_ID=$DEVSHELL_PROJECT_ID
 
 curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
 
+#!/bin/bash
 
-sudo apt-add-repository -y "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
 
 sudo apt-get update
 sudo apt-get install vault
 
 vault
 
-cat > config.hcl <<EOF_END
+
+cat > config.hcl <<EOF_CP
 storage "raft" {
   path    = "./vault/data"
   node_id = "node1"
@@ -76,36 +82,34 @@ listener "tcp" {
 api_addr = "http://127.0.0.1:8200"
 cluster_addr = "https://127.0.0.1:8201"
 ui = true
-EOF_END
+EOF_CP
+
 
 mkdir -p ./vault/data
 
 nohup vault server -config=config.hcl > vault_server.log 2>&1 &
 
-sleep 5
+sleep 10
 
 export VAULT_ADDR='http://127.0.0.1:8200'
 
-
 vault operator init -key-shares=5 -key-threshold=3 > vault_init_output.txt
 
-UNSEAL_KEY_1=$(grep 'Unseal Key 1:' vault_init_output.txt | awk '{print $NF}')
-UNSEAL_KEY_2=$(grep 'Unseal Key 2:' vault_init_output.txt | awk '{print $NF}')
-UNSEAL_KEY_3=$(grep 'Unseal Key 3:' vault_init_output.txt | awk '{print $NF}')
-ROOT_TOKEN=$(grep 'Initial Root Token:' vault_init_output.txt | awk '{print $NF}')
+KEY_1=$(grep 'Unseal Key 1:' vault_init_output.txt | awk '{print $NF}')
+KEY_2=$(grep 'Unseal Key 2:' vault_init_output.txt | awk '{print $NF}')
+KEY_3=$(grep 'Unseal Key 3:' vault_init_output.txt | awk '{print $NF}')
+TOKEN=$(grep 'Initial Root Token:' vault_init_output.txt | awk '{print $NF}')
 
-vault operator unseal $UNSEAL_KEY_1
-vault operator unseal $UNSEAL_KEY_2
-vault operator unseal $UNSEAL_KEY_3
+vault operator unseal $KEY_1
+vault operator unseal $KEY_2
+vault operator unseal $KEY_3
 
-vault login $ROOT_TOKEN
+vault login $TOKEN
 
 sleep 10
 
 vault secrets enable gcp
 
-
-#TASK 3
 
 SERVICE_ACCOUNT_EMAIL="$DEVSHELL_PROJECT_ID@$DEVSHELL_PROJECT_ID.iam.gserviceaccount.com"
 
@@ -114,7 +118,6 @@ gcloud iam service-accounts keys create ~/$DEVSHELL_PROJECT_ID.json \
 
 gcloud iam service-accounts keys list --iam-account $SERVICE_ACCOUNT_EMAIL
 
-#TASK 4
 
 export VAULT_ADDR='http://127.0.0.1:8200'
 
@@ -125,14 +128,14 @@ ttl=3600 \
 max_ttl=86400
 
 
-cat > bindings.hcl <<EOF_END
+cat > bindings.hcl <<EOF_CP
 resource "buckets/$DEVSHELL_PROJECT_ID" {
   roles = [
     "roles/storage.objectAdmin",
     "roles/storage.legacyBucketReader",
   ]
 }
-EOF_END
+EOF_CP
 
 
 vault write gcp/roleset/my-token-roleset \
@@ -184,14 +187,14 @@ ttl=3600 \
 max_ttl=86400
 
 
-cat > bindings.hcl <<EOF_END
+cat > bindings.hcl <<EOF_CP
 resource "buckets/$DEVSHELL_PROJECT_ID" {
   roles = [
     "roles/storage.objectAdmin",
     "roles/storage.legacyBucketReader",
   ]
 }
-EOF_END
+EOF_CP
 
 
 vault write gcp/roleset/my-token-roleset \
@@ -199,6 +202,9 @@ vault write gcp/roleset/my-token-roleset \
     secret_type="access_token"  \
     token_scopes="https://www.googleapis.com/auth/cloud-platform" \
     bindings=@bindings.hcl
+
+
+    
 
 ```
 
