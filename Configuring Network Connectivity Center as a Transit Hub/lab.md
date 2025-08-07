@@ -1,5 +1,4 @@
-## 🚀 Implement the User Experience for your AppSheet App | [GSP1029](https://www.cloudskillsboost.google/focuses/32749?parent=catalog)
-
+## 🚀 Configuring Network Connectivity Center as a Transit Hub
 
 
 ---
