@@ -11,7 +11,7 @@ echo "
   ____  _       _     _           _    _           _       _     _   
  |  _ \(_)     | |   | |         | |  | |         | |     | |   | |  
  | |_) |_  __ _| |__ | |__   ___ | | _| | ___  ___| |_ ___| |__ | |_ 
- |  _ <| |/ _\` | '_ \| '_ \ / _ \| |/ / |/ _ \/ __| __/ __| '_ \| __|
+ |  _ <| |/ _\` | '_ \| '_ \/ _ \| |/ / |/ _ \/ __| __/ __| '_ \| __|
  | |_) | | (_| | | | | | | | (_) |   <| |  __/\__ \ || (__| | | | |_ 
  |____/|_|\__, |_| |_|_| |_|\___/|_|\_\_|\___||___/\__\___|_| |_|\__|
            __/ |                                                     
@@ -29,12 +29,19 @@ echo ""
 sleep 3
 
 echo "Starting Google Kubernetes Engine lab setup..."
-echo "Do like the video"
+echo "This comprehensive script will complete ALL lab tasks automatically"
 echo ""
 
 # Display progress function
 progress() {
     echo "✅ $1"
+    sleep 2
+}
+
+# Error handling function
+handle_error() {
+    echo "❌ Error: $1"
+    echo "⚠️  Attempting to continue with next task..."
     sleep 2
 }
 
@@ -50,7 +57,7 @@ gcloud config set compute/zone "$ZONE"
 
 # Task: Create Kubernetes Cluster
 progress "Creating Kubernetes cluster 'io' in zone: $ZONE"
-gcloud container clusters create io --zone $ZONE
+gcloud container clusters create io --zone $ZONE --num-nodes=2 --machine-type=e2-medium
 
 # Task: Get Sample Code
 progress "Downloading sample code from Google Cloud Storage..."
@@ -74,7 +81,7 @@ kubectl get services
 
 # Task: Create Fortune App Pod
 progress "Creating fortune-app pod..."
-kubectl create -f pods/fortune-app.yaml
+kubectl create -f pods/fortune-app.yaml || handle_error "Failed to create fortune-app pod"
 kubectl get pods
 
 progress "Describing fortune-app pod..."
@@ -88,89 +95,132 @@ PORT_FORWARD_PID=$!
 sleep 5
 
 progress "Testing fortune app endpoint..."
-curl http://127.0.0.1:10080
+curl http://127.0.0.1:10080 || handle_error "Fortune app not responding"
 
 progress "Testing secure endpoint (expected to fail)..."
-curl http://127.0.0.1:10080/secure
+curl http://127.0.0.1:10080/secure || echo "Expected failure - endpoint requires authentication"
 
 progress "Logging in to get authentication token..."
 TOKEN=$(curl -s -u user:password http://127.0.0.1:10080/login | jq -r '.token')
-echo "Token acquired successfully!"
-
-progress "Testing secure endpoint with authentication token..."
-curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:10080/secure
+if [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ]; then
+    echo "Token acquired successfully!"
+    
+    progress "Testing secure endpoint with authentication token..."
+    curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:10080/secure || handle_error "Secure endpoint failed"
+else
+    handle_error "Failed to acquire authentication token"
+fi
 
 progress "Viewing application logs..."
 kubectl logs fortune-app
 
 # Task: Create Secure Fortune Pod and Service
 progress "Creating TLS certificates secret..."
-kubectl create secret generic tls-certs --from-file tls/
+kubectl create secret generic tls-certs --from-file tls/ || handle_error "Failed to create TLS secret"
 
 progress "Creating nginx proxy configuration..."
-kubectl create configmap nginx-proxy-conf --from-file nginx/proxy.conf
+kubectl create configmap nginx-proxy-conf --from-file nginx/proxy.conf || handle_error "Failed to create configmap"
 
 progress "Creating secure-fortune pod..."
-kubectl create -f pods/secure-fortune.yaml
+kubectl create -f pods/secure-fortune.yaml || handle_error "Failed to create secure-fortune pod"
 
 progress "Creating fortune-app service..."
-kubectl create -f services/fortune-app.yaml
+kubectl create -f services/fortune-app.yaml || handle_error "Failed to create fortune-app service"
 
 progress "Creating firewall rule for port 31000..."
-gcloud compute firewall-rules create allow-fortune-nodeport --allow=tcp:31000
+gcloud compute firewall-rules create allow-fortune-nodeport --allow=tcp:31000 || handle_error "Failed to create firewall rule"
 
 # Task: Add Labels to Pods
 progress "Adding 'secure=enabled' label to secure-fortune pod..."
-kubectl label pods secure-fortune 'secure=enabled'
+kubectl label pods secure-fortune 'secure=enabled' || handle_error "Failed to label pod"
 kubectl get pods secure-fortune --show-labels
 
 progress "Checking service endpoints..."
-kubectl describe services fortune-app | grep Endpoints
+kubectl describe services fortune-app | grep Endpoints || handle_error "No endpoints found"
 
 # Test secure fortune service
 progress "Testing secure fortune service externally..."
-EXTERNAL_IP=$(gcloud compute instances list --format="value(EXTERNAL_IP)" | head -1)
-curl -k https://$EXTERNAL_IP:31000
+EXTERNAL_IP=$(gcloud compute instances list --format="value(EXTERNAL_IP)" | head -n1)
+if [ -n "$EXTERNAL_IP" ]; then
+    curl -k https://$EXTERNAL_IP:31000 || handle_error "Secure fortune service not accessible"
+else
+    handle_error "Could not get external IP"
+fi
 
-# Task: Create Microservices Deployments
+# Task: Create Microservices Deployments - FIXED VERSION
 progress "Creating auth microservice deployment..."
-kubectl create -f deployments/auth.yaml
+kubectl create -f deployments/auth.yaml || {
+    handle_error "Failed to create auth deployment"
+    # Alternative approach if YAML file has issues
+    kubectl create deployment auth --image=us-central1-docker.pkg.dev/qwiklabs-resources/spl-lab-apps/auth-service:1.0.0 --port=8080
+}
 
 progress "Creating auth service..."
-kubectl create -f services/auth.yaml
+kubectl create -f services/auth.yaml || {
+    handle_error "Failed to create auth service"
+    kubectl expose deployment auth --port=80 --target-port=8080 --type=ClusterIP
+}
 
-progress "Creating fortune service deployment..."
-kubectl create -f deployments/hello.yaml
+progress "Creating hello service deployment..."
+# Check if hello.yaml exists, otherwise use alternative approach
+if [ -f "deployments/hello.yaml" ]; then
+    kubectl create -f deployments/hello.yaml || handle_error "Failed to create hello deployment"
+else
+    progress "Creating hello deployment using alternative method..."
+    kubectl create deployment hello --image=us-central1-docker.pkg.dev/qwiklabs-resources/spl-lab-apps/hello-app:1.0.0 --port=8080
+fi
 
-progress "Creating fortune service..."
-kubectl create -f services/hello.yaml
+progress "Creating hello service..."
+if [ -f "services/hello.yaml" ]; then
+    kubectl create -f services/hello.yaml || handle_error "Failed to create hello service"
+else
+    kubectl expose deployment hello --port=80 --target-port=8080 --type=ClusterIP
+fi
 
 progress "Creating frontend configuration..."
-kubectl create configmap nginx-frontend-conf --from-file=nginx/frontend.conf
+kubectl create configmap nginx-frontend-conf --from-file=nginx/frontend.conf || handle_error "Failed to create frontend configmap"
 
 progress "Creating frontend deployment..."
-kubectl create -f deployments/frontend.yaml
+if [ -f "deployments/frontend.yaml" ]; then
+    kubectl create -f deployments/frontend.yaml || {
+        handle_error "Failed to create frontend deployment from YAML"
+        # Alternative frontend deployment
+        kubectl create deployment frontend --image=us-central1-docker.pkg.dev/qwiklabs-resources/spl-lab-apps/frontend:1.0.0 --port=80
+    }
+else
+    kubectl create deployment frontend --image=us-central1-docker.pkg.dev/qwiklabs-resources/spl-lab-apps/frontend:1.0.0 --port=80
+fi
 
 progress "Creating frontend service..."
-kubectl create -f services/frontend.yaml
+if [ -f "services/frontend.yaml" ]; then
+    kubectl create -f services/frontend.yaml || {
+        handle_error "Failed to create frontend service from YAML"
+        kubectl expose deployment frontend --port=80 --target-port=80 --type=LoadBalancer
+    }
+else
+    kubectl expose deployment frontend --port=80 --target-port=80 --type=LoadBalancer
+fi
 
 # Wait for frontend service to get external IP
 progress "Waiting for frontend external IP assignment..."
-sleep 30
+sleep 60  # Longer wait for LoadBalancer
 
 progress "Checking frontend service status..."
 kubectl get services frontend
 
 # Test frontend service
 FRONTEND_IP=$(kubectl get service frontend -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-if [ ! -z "$FRONTEND_IP" ]; then
+if [ -n "$FRONTEND_IP" ] && [ "$FRONTEND_IP" != "null" ]; then
     progress "Testing frontend service at https://$FRONTEND_IP"
-    curl -k https://$FRONTEND_IP
+    curl -k https://$FRONTEND_IP || handle_error "Frontend service not responding"
+else
+    progress "Frontend IP not yet assigned, checking status..."
+    kubectl describe service frontend
 fi
 
-# Task: Create Monolith (from original script)
+# Task: Create Monolith
 progress "Creating monolith application..."
-kubectl create -f pods/monolith.yaml
+kubectl create -f pods/monolith.yaml || handle_error "Failed to create monolith pod"
 kubectl get pods
 
 # Clean up port forwarding
@@ -179,9 +229,9 @@ kill $PORT_FORWARD_PID 2>/dev/null
 # Final output
 echo ""
 echo "=================================================================="
-echo "🎉 LAB SETUP COMPLETED SUCCESSFULLY!"
+echo "🎉 LAB SETUP COMPLETED!"
 echo "=================================================================="
-echo "All Kubernetes lab tasks have been executed successfully!"
+echo "All Kubernetes lab tasks have been executed!"
 echo ""
 echo "📊 CURRENT STATUS:"
 echo "=================================================================="
@@ -194,7 +244,11 @@ echo "=================================================================="
 
 echo ""
 echo "💡 NEXT STEPS:"
-echo "1. Visit your frontend at: https://$FRONTEND_IP"
+if [ -n "$FRONTEND_IP" ] && [ "$FRONTEND_IP" != "null" ]; then
+    echo "1. Visit your frontend at: https://$FRONTEND_IP"
+else
+    echo "1. Check frontend service: kubectl get svc frontend -w"
+fi
 echo "2. Test your services using the endpoints above"
 echo "3. Explore Kubernetes dashboard: kubectl proxy"
 echo ""
