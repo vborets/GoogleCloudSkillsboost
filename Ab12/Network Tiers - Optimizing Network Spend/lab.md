@@ -1,4 +1,5 @@
-### How to Use a Network Policy on Google Kubernetes Engine
+### Network Tiers - Optimizing Network Spend
+
 
 
 ### ⚠️ Disclaimer
