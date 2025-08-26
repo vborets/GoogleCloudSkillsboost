@@ -3,7 +3,7 @@
 
 ### Task 1. Create a new dataset
 * Open BigQuery
-* Create dataset ```bq_dataset```
+* Create dataset ```ecommerce```
 
 ### Task 2. Evaluate classification model performance
 Run this script in BigQuery Editor
