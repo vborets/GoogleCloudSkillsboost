@@ -1,17 +1,24 @@
-# Analyze and Reason on Multimodal Data with Gemini Challenge Lab
+# 🔍 Analyze & Reason on Multimodal Data with Gemini — Challenge Lab
 
-## 🚀 Step-by-Step Guide
-
-### 🔗 Navigate to **Vertex AI Workbench**
-Start by accessing the Workbench from the following link:
-
-👉 [Open Vertex AI Workbench](https://console.cloud.google.com/vertex-ai/workbench/instances?)
+**Goal:** Use Vertex AI (Gemini) to analyze **text + images** inside a Vertex AI Workbench notebook.  
 
 ---
 
+## 🚪 Quick Entry Points
 
+- ▶️ **Open Vertex AI Workbench:** [![Open in Console](https://img.shields.io/badge/Open-Vertex%20AI%20Workbench-blue?logo=googlecloud)](https://console.cloud.google.com/vertex-ai/workbench/instances?)
+- 🎯 **Open the Lab:** [![Open Lab](https://img.shields.io/badge/Open-Lab%20on%20Cloud%20Skills%20Boost-orange?logo=googlecloud)](https://www.cloudskillsboost.google/focuses/121445?catalog_rank=%7B%22rank%22%3A1%2C%22num_filters%22%3A0%2C%22has_search%22%3Atrue%7D&parent=catalog&search_id=52291050)
+- 🎥 **Solution Walkthrough:** [![Watch Video](https://img.shields.io/badge/Watch-Solution%20Video-red?logo=youtube)](https://youtu.be/mATQDCeSF-0)
 
-### Run it on jupyter noteboosk terminal
+---
+
+## 🧰 Prerequisites
+
+- ✅ A GCP project with billing enabled  
+- ✅ Vertex AI API enabled  
+- ✅ Vertex AI Workbench (Managed Notebooks recommended)  
+- ✅ Permissions to use Vertex AI and GCS  
+
 
 ```
 rm gsp524-challenge-v1.0.0.ipynb
