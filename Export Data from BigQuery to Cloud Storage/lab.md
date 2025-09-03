@@ -17,6 +17,7 @@ bq load --source_format=CSV --autodetect customer_details.customers customers.cs
 ```
 bq query --use_legacy_sql=false --destination_table customer_details.male_customers 'SELECT CustomerID, Gender FROM customer_details.customers WHERE Gender="Male"'
 ```
+### Follow Video Carefully For this part
 ```
 bq extract customer_details.male_customers gs://qwiklabs-gcp-00-3340c17cff11-bucket/exported_male_customers.csv
 ```
