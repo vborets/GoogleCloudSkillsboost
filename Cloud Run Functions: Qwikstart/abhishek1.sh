@@ -1,20 +1,20 @@
 #!/bin/bash
 # Enhanced Color Definitions
-COLOR_BLACK=$'\033[0;30m'
-COLOR_RED=$'\033[0;31m'
-COLOR_GREEN=$'\033[0;32m'
-COLOR_YELLOW=$'\033[0;33m'
-COLOR_BLUE=$'\033[0;34m'
-COLOR_MAGENTA=$'\033[0;35m'
-COLOR_CYAN=$'\033[0;36m'
-COLOR_WHITE=$'\033[0;37m'
-COLOR_RESET=$'\033[0m'
+COLOR_BLACK=$'[0;30m'
+COLOR_RED=$'[0;31m'
+COLOR_GREEN=$'[0;32m'
+COLOR_YELLOW=$'[0;33m'
+COLOR_BLUE=$'[0;34m'
+COLOR_MAGENTA=$'[0;35m'
+COLOR_CYAN=$'[0;36m'
+COLOR_WHITE=$'[0;37m'
+COLOR_RESET=$'[0m'
 
 # Text Formatting
-BOLD=$'\033[1m'
-UNDERLINE=$'\033[4m'
-BLINK=$'\033[5m'
-REVERSE=$'\033[7m'
+BOLD=$'[1m'
+UNDERLINE=$'[4m'
+BLINK=$'[5m'
+REVERSE=$'[7m'
 
 # Friendly aliases used in echoes (fixes inconsistent names in the original script)
 BLUE_TEXT=$COLOR_BLUE
@@ -40,14 +40,14 @@ _spinner_pid=0
 start_spinner() {
   local msg="$1"
   local delay=0.1
-  local spinchars=("/" "-" "\\" "|")
+  local spinchars=("/" "-" "\" "|")
   printf "${CYAN_TEXT}${BOLD_TEXT}%s... ${RESET_FORMAT}" "$msg"
   (
     i=0
     while true; do
       printf "%s" "${spinchars[i%4]}"
       sleep $delay
-      printf "\b"
+      printf ""
       i=$((i+1))
     done
   ) &
@@ -60,7 +60,8 @@ stop_spinner() {
     kill "$_spinner_pid" >/dev/null 2>&1 || true
     wait "$_spinner_pid" 2>/dev/null || true
     _spinner_pid=0
-    printf " ${GREEN_TEXT}${BOLD_TEXT}done${RESET_FORMAT}\n"
+    printf " ${GREEN_TEXT}${BOLD_TEXT}done${RESET_FORMAT}
+"
   fi
 }
 
@@ -264,16 +265,21 @@ echo
 echo "${BLUE_TEXT}${BOLD_TEXT}Deploying Colored Hello World Function...${RESET_FORMAT}"
 echo
 mkdir -p ~/hello-world-colored && cd ~/hello-world-colored
+# Ensure requirements.txt exists (Cloud Functions requires it for Python runtimes)
+echo "" > requirements.txt
 cat > main.py <<'EOF'
 import os
-color = os.environ.get('COLOR')
+
 def hello_world(request):
+    color = os.environ.get('COLOR', 'white')
     return f'<body style="background-color:{color}"><h1>Hello World!</h1></body>'
 EOF
 
+# Use Python 3.11 runtime (python311) to avoid python39 deprecation
+
 deploy_with_retry hello-world-colored \
   --gen2 \
-  --runtime python39 \
+  --runtime python311 \
   --entry-point hello_world \
   --source . \
   --region $REGION \
@@ -373,7 +379,7 @@ deploy_with_retry slow-concurrent-function \
 
 echo "${CYAN_TEXT}${BOLD_TEXT} ------ PLEASE COMPLETE MANUAL STEP AND VERIFY YOUR PROGRESS OF TASK 7 ${RESET_FORMAT}"
 
-# Final message 
+# Final message (DR21)
 echo
 echo "${GREEN_TEXT}${BOLD_TEXT}=======================================================${RESET_FORMAT}"
 echo "${GREEN_TEXT}${BOLD_TEXT}              LAB COMPLETED SUCCESSFULLY!              ${RESET_FORMAT}"
