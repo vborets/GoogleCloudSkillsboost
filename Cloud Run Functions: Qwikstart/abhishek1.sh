@@ -1,52 +1,38 @@
 #!/bin/bash
-# Enhanced Color Definitions
-COLOR_BLACK=$'\033[0;30m'
-COLOR_RED=$'\033[0;31m'
-COLOR_GREEN=$'\033[0;32m'
-COLOR_YELLOW=$'\033[0;33m'
-COLOR_BLUE=$'\033[0;34m'
-COLOR_MAGENTA=$'\033[0;35m'
-COLOR_CYAN=$'\033[0;36m'
-COLOR_WHITE=$'\033[0;37m'
+set -euo pipefail
+
+
+
+# --- Colors & formatting ---
 COLOR_RESET=$'\033[0m'
-
-# Text Formatting
 BOLD=$'\033[1m'
-UNDERLINE=$'\033[4m'
-BLINK=$'\033[5m'
-REVERSE=$'\033[7m'
+RED=$'\033[0;31m'
+GREEN=$'\033[0;32m'
+YELLOW=$'\033[0;33m'
+BLUE=$'\033[0;34m'
+MAGENTA=$'\033[0;35m'
+CYAN=$'\033[0;36m'
 
-# Friendly aliases used in echoes
-BLUE_TEXT=$COLOR_BLUE
-GREEN_TEXT=$COLOR_GREEN
-YELLOW_TEXT=$COLOR_YELLOW
-RED_TEXT=$COLOR_RED
-MAGENTA_TEXT=$COLOR_MAGENTA
-CYAN_TEXT=$COLOR_CYAN
-WHITE_TEXT=$COLOR_WHITE
-BOLD_TEXT=$BOLD
-UNDERLINE_TEXT=$UNDERLINE
-RESET_FORMAT=$COLOR_RESET
+info() { printf "%b\n" "${CYAN}${BOLD}$*${COLOR_RESET}"; }
+ok()   { printf "%b\n" "${GREEN}${BOLD}$*${COLOR_RESET}"; }
+warn() { printf "%b\n" "${YELLOW}${BOLD}$*${COLOR_RESET}"; }
+err()  { printf "%b\n" "${RED}${BOLD}$*${COLOR_RESET}"; }
 
-clear
-# Welcome banner
-echo "${MAGENTA_TEXT}${BOLD_TEXT}=========================================================${RESET_FORMAT}"
-echo "${MAGENTA_TEXT}${BOLD_TEXT}     Welcome to Dr Abhishek Cloud Tutorial — Let's begin!    ${RESET_FORMAT}"
-echo "${MAGENTA_TEXT}${BOLD_TEXT}=========================================================${RESET_FORMAT}"
-echo
+# YouTube channel (exact URL provided)
+CHANNEL_URL="https://www.youtube.com/@drabhishek.5460/videos"
 
-# Spinner utilities
+# --- Spinner helpers ---
 _spinner_pid=0
-start_spinner() {
+start_spinner(){
   local msg="$1"
-  local delay=0.1
+  local delay=0.08
   local spinchars=('/' '-' '\' '|')
-  printf "${CYAN_TEXT}${BOLD_TEXT}%s... ${RESET_FORMAT}" "$msg"
+  printf "%b" "${BLUE}${BOLD}${msg}... ${COLOR_RESET}"
   (
     i=0
     while true; do
       printf "%s" "${spinchars[i%4]}"
-      sleep $delay
+      sleep "$delay"
       printf "\b"
       i=$((i+1))
     done
@@ -54,18 +40,79 @@ start_spinner() {
   _spinner_pid=$!
   disown
 }
-
-stop_spinner() {
+stop_spinner(){
   if [ "$_spinner_pid" -ne 0 ]; then
     kill "$_spinner_pid" >/dev/null 2>&1 || true
     wait "$_spinner_pid" 2>/dev/null || true
     _spinner_pid=0
-    printf " ${GREEN_TEXT}${BOLD_TEXT}done${RESET_FORMAT}\n"
+    printf "%b\n" " ${GREEN}${BOLD}done${COLOR_RESET}"
   fi
 }
 
-# Enable GCP Services
-start_spinner "Enabling Required GCP Services"
+# --- deploy retry wrapper ---
+deploy_with_retry(){
+  local name="$1"; shift
+  local attempts=0
+  local max_attempts=5
+  while [ $attempts -lt $max_attempts ]; do
+    attempts=$((attempts+1))
+    warn "Attempt ${attempts}: Deploying ${name}"
+    start_spinner "deploying ${name} (attempt ${attempts})"
+    if gcloud functions deploy "${name}" "$@"; then
+      stop_spinner
+      ok "${name} deployed!"
+      return 0
+    else
+      stop_spinner
+      warn "Deploy failed for ${name} (attempt ${attempts})"
+      if [ $attempts -lt $max_attempts ]; then
+        warn "Retrying in 30s..."
+        sleep 30
+      fi
+    fi
+  done
+  err "Failed to deploy ${name} after ${max_attempts} attempts"
+  return 1
+}
+
+# ---------------------------
+# Header / Welcome banner
+# ---------------------------
+clear
+printf "%b\n" "${MAGENTA}${BOLD}=========================================================${COLOR_RESET}"
+printf "%b\n" "${MAGENTA}${BOLD}    Welcome to Dr Abhishek Cloud Tutorial — Let's learn GCP!   ${COLOR_RESET}"
+printf "%b\n" "${MAGENTA}${BOLD}=========================================================${COLOR_RESET}"
+printf "\n"
+printf "%b\n" "${YELLOW}${BOLD}Channel:${COLOR_RESET} ${BLUE}${CHANNEL_URL}${COLOR_RESET}"
+printf "\n"
+printf "%b\n" "${YELLOW}${BOLD}If you find this helpful, please consider subscribing!${COLOR_RESET}"
+printf "\n"
+
+# ---------------------------
+# Detect project, region, zone
+# ---------------------------
+info "Detecting Cloud project, region and zone..."
+PROJECT_ID=$(gcloud config get-value project 2>/dev/null || true)
+if [ -z "${PROJECT_ID}" ]; then
+  err "No gcloud project configured. Run 'gcloud config set project PROJECT_ID' and re-run."
+  exit 1
+fi
+PROJECT_NUMBER=$(gcloud projects list --filter="project_id:${PROJECT_ID}" --format='value(project_number)')
+# Try to read metadata keys set by the lab, fallback to us-east1/us-east1-d
+REGION=$(gcloud compute project-info describe --format="value(commonInstanceMetadata.items[google-compute-default-region])" 2>/dev/null || true)
+ZONE=$(gcloud compute project-info describe --format="value(commonInstanceMetadata.items[google-compute-default-zone])" 2>/dev/null || true)
+: "${REGION:=us-east1}"
+: "${ZONE:=us-east1-d}"
+
+ok "Project: ${PROJECT_ID} (${PROJECT_NUMBER})"
+ok "Region: ${REGION}"
+ok "Zone: ${ZONE}"
+
+# ---------------------------
+# Task 1: Enable APIs
+# ---------------------------
+info "Enabling required APIs (this may take a minute)..."
+start_spinner "Enabling APIs"
 gcloud services enable \
   artifactregistry.googleapis.com \
   cloudfunctions.googleapis.com \
@@ -74,89 +121,37 @@ gcloud services enable \
   run.googleapis.com \
   logging.googleapis.com \
   osconfig.googleapis.com \
-  pubsub.googleapis.com
+  pubsub.googleapis.com \
+  cloudaicompanion.googleapis.com \
+  --project "${PROJECT_ID}" >/dev/null 2>&1 || true
 stop_spinner
+ok "APIs enabled (or request submitted)."
 
-echo
-# Set Project Variables
-export PROJECT_ID=$(gcloud config get-value project)
-PROJECT_NUMBER=$(gcloud projects list --filter="project_id:$PROJECT_ID" --format='value(project_number)')
-export ZONE=$(gcloud compute project-info describe \
---format="value(commonInstanceMetadata.items[google-compute-default-zone])")
-export REGION=$(gcloud compute project-info describe \
---format="value(commonInstanceMetadata.items[google-compute-default-region])")
-gcloud config set compute/region $REGION
+# Set default region/zone in gcloud config
+gcloud config set compute/region "${REGION}" >/dev/null || true
+gcloud config set compute/zone "${ZONE}" >/dev/null || true
 
-# Configure IAM
-start_spinner "Configuring IAM bindings"
-SERVICE_ACCOUNT=$(gsutil kms serviceaccount -p $PROJECT_NUMBER)
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member serviceAccount:$SERVICE_ACCOUNT \
-  --role roles/pubsub.publisher
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com \
-  --role roles/eventarc.eventReceiver
-stop_spinner
+# ---------------------------
+# Task 2: Create HTTP function
+# ---------------------------
+info "Task 2: Create HTTP function (nodejs)"
 
-# Update IAM Policy
-gcloud projects get-iam-policy $PROJECT_ID > policy.yaml
-cat <<'EOF' >> policy.yaml
-auditConfigs:
-- auditLogConfigs:
-  - logType: ADMIN_READ
-  - logType: DATA_READ
-  - logType: DATA_WRITE
-  service: compute.googleapis.com
-EOF
-start_spinner "Updating IAM policy"
-gcloud projects set-iam-policy $PROJECT_ID policy.yaml
-stop_spinner
-
-# Improved deploy_with_retry uses spinner during each attempt
-deploy_with_retry() {
-  local function_name=$1
-  shift
-  local attempts=0
-  local max_attempts=5
-  while [ $attempts -lt $max_attempts ]; do
-    attempts=$((attempts+1))
-    echo "${YELLOW_TEXT}${BOLD_TEXT}Attempt $attempts: Deploying $function_name...${RESET_FORMAT}"
-    start_spinner "Deploying $function_name (attempt $attempts)"
-    if gcloud functions deploy $function_name "$@"; then
-      stop_spinner
-      echo "${GREEN_TEXT}${BOLD_TEXT}$function_name deployed successfully!${RESET_FORMAT}"
-      return 0
-    else
-      stop_spinner
-      echo "${RED_TEXT}${BOLD_TEXT}Deployment failed for $function_name on attempt $attempts${RESET_FORMAT}"
-      if [ $attempts -lt $max_attempts ]; then
-        echo "${YELLOW_TEXT}Retrying in 30 seconds...${RESET_FORMAT}"
-        sleep 30
-      fi
-    fi
-  done
-  echo "${RED_TEXT}${BOLD_TEXT}Failed to deploy $function_name after $max_attempts attempts${RESET_FORMAT}"
-  return 1
-}
-
-# Deploy HTTP Function
-echo
-echo "${BLUE_TEXT}${BOLD_TEXT}Deploying HTTP Trigger Function...${RESET_FORMAT}"
-echo
 mkdir -p ~/hello-http && cd ~/hello-http
 cat <<'EOF' > index.js
 const functions = require('@google-cloud/functions-framework');
+
 functions.http('helloWorld', (req, res) => {
-  res.status(200).send('HTTP with Node.js 22 in GCF 2nd gen!');
+  res.status(200).send('HTTP with Node.js in GCF 2nd gen!');
 });
 EOF
+
 cat <<'EOF' > package.json
 {
-  "name": "nodejs-http-function",
-  "version": "1.0.0",
+  "name": "nodejs-functions-gen2-codelab",
+  "version": "0.0.1",
   "main": "index.js",
   "dependencies": {
-    "@google-cloud/functions-framework": "^3.0.0"
+    "@google-cloud/functions-framework": "^2.0.0"
   }
 }
 EOF
@@ -166,43 +161,50 @@ deploy_with_retry nodejs-http-function \
   --runtime nodejs22 \
   --entry-point helloWorld \
   --source . \
-  --region $REGION \
+  --region "${REGION}" \
   --trigger-http \
   --timeout 600s \
   --max-instances 1 \
-  --allow-unauthenticated
+  --quiet
 
-# Test HTTP Function
-echo
-echo "${BLUE_TEXT}${BOLD_TEXT}Testing HTTP Function...${RESET_FORMAT}"
-gcloud functions call nodejs-http-function --gen2 --region $REGION || true
+info "Testing nodejs-http-function (call)"
+gcloud functions call nodejs-http-function --gen2 --region "${REGION}" || true
 
-# Deploy Storage Function
-echo
-echo "${BLUE_TEXT}${BOLD_TEXT}Deploying Storage Trigger Function...${RESET_FORMAT}"
-echo
+# ---------------------------
+# Task 3: Create Cloud Storage function
+# ---------------------------
+info "Task 3: Create Cloud Storage function (nodejs)"
+
+SERVICE_ACCOUNT=$(gsutil kms serviceaccount -p "${PROJECT_NUMBER}")
+info "Granting roles/pubsub.publisher to Storage service account: ${SERVICE_ACCOUNT}"
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member "serviceAccount:${SERVICE_ACCOUNT}" \
+  --role roles/pubsub.publisher || true
+
 mkdir -p ~/hello-storage && cd ~/hello-storage
 cat <<'EOF' > index.js
 const functions = require('@google-cloud/functions-framework');
+
 functions.cloudEvent('helloStorage', (cloudevent) => {
-  console.log('Cloud Storage event with Node.js 22 in GCF 2nd gen!');
+  console.log('Cloud Storage event with Node.js in GCF 2nd gen!');
   console.log(cloudevent);
 });
 EOF
+
 cat <<'EOF' > package.json
 {
-  "name": "nodejs-storage-function",
-  "version": "1.0.0",
+  "name": "nodejs-functions-gen2-codelab",
+  "version": "0.0.1",
   "main": "index.js",
   "dependencies": {
-    "@google-cloud/functions-framework": "^3.0.0"
+    "@google-cloud/functions-framework": "^2.0.0"
   }
 }
 EOF
 
-BUCKET="gs://gcf-gen2-storage-$PROJECT_ID"
-start_spinner "Creating bucket $BUCKET"
-gsutil mb -l $REGION $BUCKET || true
+BUCKET="gs://gcf-gen2-storage-${PROJECT_ID}"
+start_spinner "Creating bucket ${BUCKET}"
+gsutil mb -l "${REGION}" "${BUCKET}" || true
 stop_spinner
 
 deploy_with_retry nodejs-storage-function \
@@ -210,25 +212,44 @@ deploy_with_retry nodejs-storage-function \
   --runtime nodejs22 \
   --entry-point helloStorage \
   --source . \
-  --region $REGION \
-  --trigger-bucket $BUCKET \
-  --trigger-location $REGION \
-  --max-instances 1
+  --region "${REGION}" \
+  --trigger-bucket "${BUCKET}" \
+  --trigger-location "${REGION}" \
+  --max-instances 1 \
+  --quiet
 
-# Test Storage Function
+info "Testing storage trigger by uploading a file..."
 echo "Hello World" > random.txt
-gsutil cp random.txt $BUCKET/random.txt || true
-echo
-echo "${BLUE_TEXT}${BOLD_TEXT}Checking Storage Function Logs...${RESET_FORMAT}"
-gcloud functions logs read nodejs-storage-function \
-  --region $REGION --gen2 --limit=100 --format "value(log)" || true
+gsutil cp random.txt "${BUCKET}/random.txt" || true
 
-# Deploy VM Labeler Function
-echo
-echo "${BLUE_TEXT}${BOLD_TEXT}Deploying VM Labeler Function...${RESET_FORMAT}"
-echo
+info "Checking storage function logs (may take a moment)..."
+gcloud functions logs read nodejs-storage-function --region "${REGION}" --gen2 --limit=100 --format "value(log)" || true
+
+# ---------------------------
+# Task 4: Create Cloud Audit Logs function (VM labeler)
+# ---------------------------
+info "Task 4: Deploy Cloud Audit Logs function (gce-vm-labeler)"
+# append auditConfigs to policy (some labs require the policy update)
+gcloud projects get-iam-policy "${PROJECT_ID}" > /tmp/policy.yaml || true
+cat <<'EOF' >> /tmp/policy.yaml
+auditConfigs:
+- auditLogConfigs:
+  - logType: ADMIN_READ
+  - logType: DATA_READ
+  - logType: DATA_WRITE
+  service: compute.googleapis.com
+EOF
+start_spinner "Updating IAM policy for audit logs"
+gcloud projects set-iam-policy "${PROJECT_ID}" /tmp/policy.yaml || true
+stop_spinner
+
+# grant eventarc.eventReceiver to default compute service account
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member "serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+  --role roles/eventarc.eventReceiver || true
+
 cd ~
-if [ ! -d "~/eventarc-samples" ]; then
+if [ ! -d ~/eventarc-samples ]; then
   start_spinner "Cloning eventarc-samples"
   git clone https://github.com/GoogleCloudPlatform/eventarc-samples.git || true
   stop_spinner
@@ -240,144 +261,205 @@ deploy_with_retry gce-vm-labeler \
   --runtime nodejs22 \
   --entry-point labelVmCreation \
   --source . \
-  --region $REGION \
+  --region "${REGION}" \
   --trigger-event-filters="type=google.cloud.audit.log.v1.written,serviceName=compute.googleapis.com,methodName=beta.compute.instances.insert" \
-  --trigger-location $REGION \
-  --max-instances 1
+  --trigger-location "${REGION}" \
+  --max-instances 1 \
+  --quiet
 
-# Create Test VM
-echo
-echo "${BLUE_TEXT}${BOLD_TEXT}Creating Test VM Instance...${RESET_FORMAT}"
-start_spinner "Creating VM instance-1"
-gcloud compute instances create instance-1 --project=$PROJECT_ID --zone=$ZONE --machine-type=e2-medium --network-interface=network-tier=PREMIUM,stack-type=IPV4_ONLY,subnet=default --metadata=enable-osconfig=TRUE,enable-oslogin=true --maintenance-policy=MIGRATE --provisioning-model=STANDARD --service-account=$PROJECT_NUMBER-compute@developer.gserviceaccount.com --scopes=https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/trace.append --create-disk=auto-delete=yes,boot=yes,device-name=instance-1,image=projects/debian-cloud/global/images/debian-12-bookworm-v20250311,mode=rw,size=10,type=pd-balanced --no-shielded-secure-boot --shielded-vtpm --shielded-integrity-monitoring --labels=goog-ops-agent-policy=v2-x86-template-1-4-0,goog-ec-src=vm_add-gcloud --reservation-affinity=any || true
+info "Creating a test VM instance 'instance-1' in zone ${ZONE} to trigger the audit log function."
+start_spinner "Creating test VM instance-1"
+gcloud compute instances create instance-1 \
+  --project="${PROJECT_ID}" \
+  --zone="${ZONE}" \
+  --machine-type=e2-medium \
+  --network-interface=network-tier=PREMIUM,stack-type=IPV4_ONLY,subnet=default \
+  --metadata=enable-osconfig=TRUE,enable-oslogin=true \
+  --maintenance-policy=MIGRATE \
+  --provisioning-model=STANDARD \
+  --service-account="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+  --scopes=https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/trace.append \
+  --create-disk=auto-delete=yes,boot=yes,device-name=instance-1,image=projects/debian-cloud/global/images/debian-12-bookworm-v20250311,mode=rw,size=10,type=pd-balanced \
+  --no-shielded-secure-boot --shielded-vtpm --shielded-integrity-monitoring \
+  --labels=goog-ops-agent-policy=v2-x86-template-1-4-0,goog-ec-src=vm_add-gcloud \
+  --reservation-affinity=any || true
 stop_spinner
 
-# Describe VM
-echo
-echo "${BLUE_TEXT}${BOLD_TEXT}Checking VM Details...${RESET_FORMAT}"
-gcloud compute instances describe instance-1 --zone $ZONE || true
+info "Describe the VM (look for labels):"
+gcloud compute instances describe instance-1 --zone "${ZONE}" || true
 
-# Deploy Colored Function (Python) — use python311 and ensure requirements.txt exists
-echo
-echo "${BLUE_TEXT}${BOLD_TEXT}Deploying Colored Hello World Function...${RESET_FORMAT}"
-echo
+# ---------------------------
+# Task 5: Deploy different revisions (hello-world-colored)
+# ---------------------------
+info "Task 5: hello-world-colored revisions (Python)"
 mkdir -p ~/hello-world-colored && cd ~/hello-world-colored
-echo "" > requirements.txt
 cat <<'EOF' > main.py
 import os
 
+color = os.environ.get('COLOR', 'white')
+
 def hello_world(request):
-    color = os.environ.get('COLOR', 'white')
     return f'<body style="background-color:{color}"><h1>Hello World!</h1></body>'
 EOF
+echo "" > requirements.txt
 
+# First revision: orange
+COLOR=orange
 deploy_with_retry hello-world-colored \
   --gen2 \
   --runtime python311 \
   --entry-point hello_world \
   --source . \
-  --region $REGION \
+  --region "${REGION}" \
   --trigger-http \
   --allow-unauthenticated \
-  --update-env-vars COLOR=yellow \
-  --max-instances 1
+  --update-env-vars "COLOR=${COLOR}" \
+  --max-instances 1 \
+  --quiet
 
-# Deploy Slow Go Function (use quoted heredoc so `time.Sleep` is not interpreted by Bash)
-echo
-echo "${BLUE_TEXT}${BOLD_TEXT}Deploying Slow Go Function...${RESET_FORMAT}"
-echo
+info "First revision deployed (COLOR=orange). Now updating revision to COLOR=yellow."
+# Second revision: yellow
+COLOR=yellow
+deploy_with_retry hello-world-colored \
+  --gen2 \
+  --runtime python311 \
+  --entry-point hello_world \
+  --source . \
+  --region "${REGION}" \
+  --trigger-http \
+  --allow-unauthenticated \
+  --update-env-vars "COLOR=${COLOR}" \
+  --max-instances 1 \
+  --quiet
+
+# ---------------------------
+# Task 6: Set minimum instances (slow-function)
+# ---------------------------
+info "Task 6: min-instances (slow-function - Go)"
+
 mkdir -p ~/min-instances && cd ~/min-instances
 cat <<'EOF' > main.go
 package p
+
 import (
         "fmt"
         "net/http"
         "time"
 )
+
 func init() {
         time.Sleep(10 * time.Second)
 }
+
 func HelloWorld(w http.ResponseWriter, r *http.Request) {
         fmt.Fprint(w, "Slow HTTP Go in GCF 2nd gen!")
 }
 EOF
-echo "module example.com/mod" > go.mod
+cat <<'EOF' > go.mod
+module example.com/mod
+
+go 1.23
+EOF
 
 deploy_with_retry slow-function \
   --gen2 \
   --runtime go123 \
   --entry-point HelloWorld \
   --source . \
-  --region $REGION \
+  --region "${REGION}" \
   --trigger-http \
   --allow-unauthenticated \
-  --max-instances 4
+  --max-instances 4 \
+  --quiet
 
-# Test Slow Function
-echo
-echo "${BLUE_TEXT}${BOLD_TEXT}Testing Slow Function...${RESET_FORMAT}"
-gcloud functions call slow-function --gen2 --region $REGION || true
+info "Test slow-function (first call may exhibit ~10s cold start)"
+gcloud functions call slow-function --gen2 --region "${REGION}" || true
 
-# Deploy as Cloud Run Service (if needed)
-echo
-echo "${BLUE_TEXT}${BOLD_TEXT}Deploying as Cloud Run Service...${RESET_FORMAT}"
-
-# Progress Check
-function check_progress {
-    while true; do
-        echo
-        echo "${CYAN_TEXT}${BOLD_TEXT} ------ PLEASE COMPLETE MANUAL STEP AND VERIFY YOUR PROGRESS UP TO TASK 6 ${RESET_FORMAT}"
-        echo
-        read -p "${BLUE_TEXT}${BOLD_TEXT}Have you completed Task 6? (Y/N): ${RESET_FORMAT}" user_input
-
-        case $user_input in
-            [Yy]*)
-                echo
-                echo "${GREEN_TEXT}${BOLD_TEXT}Proceeding to next steps...${RESET_FORMAT}"
-                echo
-                break
-                ;;
-            [Nn]*)
-                echo
-                echo "${RED_TEXT}${BOLD_TEXT}Please complete Task 6 first${RESET_FORMAT}"
-                ;;
-            *)
-                echo
-                echo "Invalid input. Please enter Y or N."
-                ;;
-        esac
-    done
-}
-check_progress
-
-# Cleanup (delete previous Cloud Run service if exists)
-echo
-echo "${BLUE_TEXT}${BOLD_TEXT}Cleaning Up Previous Deployment...${RESET_FORMAT}"
-start_spinner "Deleting previous Cloud Run service slow-function"
-gcloud run services delete slow-function --region $REGION --quiet || true
-stop_spinner
-
-# Deploy Concurrent Function
-echo
-echo "${BLUE_TEXT}${BOLD_TEXT}Deploying Concurrent Function...${RESET_FORMAT}"
-deploy_with_retry slow-concurrent-function \
+info "Redeploying slow-function with --min-instances=1 to reduce cold starts."
+deploy_with_retry slow-function \
   --gen2 \
   --runtime go123 \
   --entry-point HelloWorld \
   --source . \
-  --region $REGION \
+  --region "${REGION}" \
   --trigger-http \
   --allow-unauthenticated \
   --min-instances 1 \
-  --max-instances 4
+  --max-instances 4 \
+  --quiet
 
-echo "${CYAN_TEXT}${BOLD_TEXT} ------ PLEASE COMPLETE MANUAL STEP AND VERIFY YOUR PROGRESS OF TASK 7 ${RESET_FORMAT}"
+info "Test slow-function again (cold starts should be reduced)"
+gcloud functions call slow-function --gen2 --region "${REGION}" || true
 
-# Final message ()
-echo
-echo "${GREEN_TEXT}${BOLD_TEXT}=======================================================${RESET_FORMAT}"
-echo "${GREEN_TEXT}${BOLD_TEXT}              LAB COMPLETED SUCCESSFULLY!              ${RESET_FORMAT}"
-echo "${GREEN_TEXT}${BOLD_TEXT}=======================================================${RESET_FORMAT}"
-echo
-echo "${UNDERLINE_TEXT}${BLUE_TEXT}${BOLD_TEXT}https://www.youtube.com/@drabhishek.5460/videos${RESET_FORMAT}"
-echo
+# ---------------------------
+# Task 7: Create a function with concurrency (slow-concurrent-function)
+# ---------------------------
+info "Task 7: concurrency - deploy slow-concurrent-function and set concurrency to 100"
+
+# Remove old service to follow lab flow (if exists)
+gcloud run services delete slow-function --region "${REGION}" --quiet || true
+
+deploy_with_retry slow-concurrent-function \
+  --gen2 \
+  --runtime go123 \
+  --entry-point HelloWorld \
+  --source ~/min-instances \
+  --region "${REGION}" \
+  --trigger-http \
+  --allow-unauthenticated \
+  --min-instances 1 \
+  --max-instances 4 \
+  --quiet
+
+# Wait briefly for underlying Cloud Run service to exist
+sleep 5
+
+info "Attempting to set Cloud Run service concurrency to 100"
+if gcloud run services update slow-concurrent-function --region "${REGION}" --concurrency=100 --project="${PROJECT_ID}" --quiet 2>/dev/null; then
+  ok "Concurrency updated to 100"
+else
+  warn "Could not set concurrency via gcloud run (try via Console)."
+fi
+
+# Install hey (if not present) and run tests
+if ! command -v hey >/dev/null 2>&1; then
+  info "Installing hey for benchmarking..."
+  sudo apt-get update -y >/dev/null || true
+  sudo apt-get install -y hey || true
+fi
+
+SLOW_URL=$(gcloud functions describe slow-function --region "${REGION}" --gen2 --format="value(serviceConfig.uri)" || true)
+SLOW_CONCURRENT_URL=$(gcloud functions describe slow-concurrent-function --region "${REGION}" --gen2 --format="value(serviceConfig.uri)" || true)
+
+if [ -n "${SLOW_URL}" ]; then
+  info "Running hey -n 10 -c 10 against slow-function"
+  hey -n 10 -c 10 "${SLOW_URL}" || true
+else
+  warn "slow-function URL not found; skip hey test for slow-function."
+fi
+
+if [ -n "${SLOW_CONCURRENT_URL}" ]; then
+  info "Running hey -n 10 -c 10 against slow-concurrent-function (concurrency=100)"
+  hey -n 10 -c 10 "${SLOW_CONCURRENT_URL}" || true
+else
+  warn "slow-concurrent-function URL not found; skip hey test for concurrent function."
+fi
+
+# ---------------------------
+# Final summary & CTA
+# ---------------------------
+ok "All tasks attempted. Summary:"
+printf " - Project: %s\n - Region: %s\n - Zone: %s\n" "${PROJECT_ID}" "${REGION}" "${ZONE}"
+printf " - HTTP function: nodejs-http-function (region %s)\n" "${REGION}"
+printf " - Storage function: nodejs-storage-function (bucket: %s)\n" "${BUCKET}"
+printf " - Audit Log function: gce-vm-labeler (region %s)\n" "${REGION}"
+printf " - Hello color function: hello-world-colored (revisions orange->yellow)\n"
+printf " - Slow function: slow-function (min-instances=1)\n"
+printf " - Concurrent function: slow-concurrent-function (concurrency attempted=100)\n"
+
+printf "\n"
+printf "%b\n" "${MAGENTA}${BOLD}If this helped you, please visit and subscribe: ${COLOR_RESET}${BLUE}${CHANNEL_URL}${COLOR_RESET}"
+printf "%b\n" "${YELLOW}${BOLD}Thank you for using Dr Abhishek Cloud Tutorial — happy building!${COLOR_RESET}"
+printf "\n"
+
+# End
