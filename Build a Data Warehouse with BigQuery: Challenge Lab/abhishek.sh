@@ -47,8 +47,8 @@ bq query --use_legacy_sql=false \
 CREATE OR REPLACE TABLE $DATASET_NAME_1.oxford_policy_tracker
 PARTITION BY date
 OPTIONS(
-partition_expiration_days=1445,
-description='oxford_policy_tracker table in the COVID 19 Government Response public dataset with expiry time set to 90 days.'
+partition_expiration_days=2175,
+description='oxford_policy_tracker table in the COVID 19 Government Response public dataset with expiry time set to 2175 days.'
 ) AS
 SELECT
    *
@@ -82,21 +82,30 @@ echo
 
 # Task 3: Create population data table and update
 echo "${CYAN}${BOLD}TASK 3: Creating and updating population data${RESET}"
-echo "${YELLOW}Creating pop_data_2019 table...${RESET}"
+echo "${YELLOW}Creating pop_data_2019 table (full schema copy)...${RESET}"
 bq query --use_legacy_sql=false \
 "
 CREATE OR REPLACE TABLE $DATASET_NAME_2.pop_data_2019 AS
+SELECT *
+FROM 
+  \`bigquery-public-data.covid19_ecdc.covid_19_geographic_distribution_worldwide\`
+"
+
+echo "${YELLOW}Creating lightweight projection (country_territory_code, pop_data_2019) for joins...${RESET}"
+bq query --use_legacy_sql=false \
+"
+CREATE OR REPLACE TABLE $DATASET_NAME_2.pop_data_2019_small AS
 SELECT
   country_territory_code,
   pop_data_2019
 FROM 
-  \`bigquery-public-data.covid19_ecdc.covid_19_geographic_distribution_worldwide\`
+  \`$DEVSHELL_PROJECT_ID.$DATASET_NAME_2.pop_data_2019\`
 GROUP BY
   country_territory_code,
   pop_data_2019
 ORDER BY
   country_territory_code
-"  
+"
 
 echo "${YELLOW}Updating population data...${RESET}"
 bq query --use_legacy_sql=false \
@@ -106,10 +115,10 @@ UPDATE
 SET
    population = t1.pop_data_2019
 FROM
-   \`$DATASET_NAME_2.pop_data_2019\` t1
+   \`$DATASET_NAME_2.pop_data_2019_small\` t1
 WHERE
-   CONCAT(t0.alpha_3_code) = CONCAT(t1.country_territory_code);
-"   
+   TRIM(t0.alpha_3_code) = TRIM(t1.country_territory_code);
+"
 echo "${GREEN}Task 3 completed successfully!${RESET}"
 echo
 
