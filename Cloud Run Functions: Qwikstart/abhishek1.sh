@@ -40,7 +40,7 @@ _spinner_pid=0
 start_spinner() {
   local msg="$1"
   local delay=0.1
-  local spinchars=("/" "-" "\\" "|")
+  local spinchars=('/' '-' '\' '|')
   printf "${CYAN_TEXT}${BOLD_TEXT}%s... ${RESET_FORMAT}" "$msg"
   (
     i=0
@@ -112,28 +112,7 @@ start_spinner "Updating IAM policy"
 gcloud projects set-iam-policy $PROJECT_ID policy.yaml
 stop_spinner
 
-# Deploy HTTP Function
-echo
-echo "${BLUE_TEXT}${BOLD_TEXT}Deploying HTTP Trigger Function...${RESET_FORMAT}"
-echo
-mkdir -p ~/hello-http && cd ~/hello-http
-cat <<'EOF' > index.js
-const functions = require('@google-cloud/functions-framework');
-functions.http('helloWorld', (req, res) => {
-  res.status(200).send('HTTP with Node.js 22 in GCF 2nd gen!');
-});
-EOF
-cat <<'EOF' > package.json
-{
-  "name": "nodejs-http-function",
-  "version": "1.0.0",
-  "main": "index.js",
-  "dependencies": {
-    "@google-cloud/functions-framework": "^3.0.0"
-  }
-}
-EOF
-
+# Improved deploy_with_retry uses spinner during each attempt
 deploy_with_retry() {
   local function_name=$1
   shift
@@ -160,6 +139,28 @@ deploy_with_retry() {
   return 1
 }
 
+# Deploy HTTP Function
+echo
+echo "${BLUE_TEXT}${BOLD_TEXT}Deploying HTTP Trigger Function...${RESET_FORMAT}"
+echo
+mkdir -p ~/hello-http && cd ~/hello-http
+cat <<'EOF' > index.js
+const functions = require('@google-cloud/functions-framework');
+functions.http('helloWorld', (req, res) => {
+  res.status(200).send('HTTP with Node.js 22 in GCF 2nd gen!');
+});
+EOF
+cat <<'EOF' > package.json
+{
+  "name": "nodejs-http-function",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.0.0"
+  }
+}
+EOF
+
 deploy_with_retry nodejs-http-function \
   --gen2 \
   --runtime nodejs22 \
@@ -171,6 +172,7 @@ deploy_with_retry nodejs-http-function \
   --max-instances 1 \
   --allow-unauthenticated
 
+# Test HTTP Function
 echo
 echo "${BLUE_TEXT}${BOLD_TEXT}Testing HTTP Function...${RESET_FORMAT}"
 gcloud functions call nodejs-http-function --gen2 --region $REGION || true
@@ -199,7 +201,7 @@ cat <<'EOF' > package.json
 EOF
 
 BUCKET="gs://gcf-gen2-storage-$PROJECT_ID"
-start_spinner "Creating bucket $BUCKET and deploying storage function"
+start_spinner "Creating bucket $BUCKET"
 gsutil mb -l $REGION $BUCKET || true
 stop_spinner
 
@@ -213,9 +215,9 @@ deploy_with_retry nodejs-storage-function \
   --trigger-location $REGION \
   --max-instances 1
 
+# Test Storage Function
 echo "Hello World" > random.txt
 gsutil cp random.txt $BUCKET/random.txt || true
-
 echo
 echo "${BLUE_TEXT}${BOLD_TEXT}Checking Storage Function Logs...${RESET_FORMAT}"
 gcloud functions logs read nodejs-storage-function \
@@ -243,17 +245,19 @@ deploy_with_retry gce-vm-labeler \
   --trigger-location $REGION \
   --max-instances 1
 
+# Create Test VM
 echo
 echo "${BLUE_TEXT}${BOLD_TEXT}Creating Test VM Instance...${RESET_FORMAT}"
 start_spinner "Creating VM instance-1"
 gcloud compute instances create instance-1 --project=$PROJECT_ID --zone=$ZONE --machine-type=e2-medium --network-interface=network-tier=PREMIUM,stack-type=IPV4_ONLY,subnet=default --metadata=enable-osconfig=TRUE,enable-oslogin=true --maintenance-policy=MIGRATE --provisioning-model=STANDARD --service-account=$PROJECT_NUMBER-compute@developer.gserviceaccount.com --scopes=https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/trace.append --create-disk=auto-delete=yes,boot=yes,device-name=instance-1,image=projects/debian-cloud/global/images/debian-12-bookworm-v20250311,mode=rw,size=10,type=pd-balanced --no-shielded-secure-boot --shielded-vtpm --shielded-integrity-monitoring --labels=goog-ops-agent-policy=v2-x86-template-1-4-0,goog-ec-src=vm_add-gcloud --reservation-affinity=any || true
 stop_spinner
 
+# Describe VM
 echo
 echo "${BLUE_TEXT}${BOLD_TEXT}Checking VM Details...${RESET_FORMAT}"
 gcloud compute instances describe instance-1 --zone $ZONE || true
 
-# Deploy Colored Function
+# Deploy Colored Function (Python) — use python311 and ensure requirements.txt exists
 echo
 echo "${BLUE_TEXT}${BOLD_TEXT}Deploying Colored Hello World Function...${RESET_FORMAT}"
 echo
@@ -278,7 +282,7 @@ deploy_with_retry hello-world-colored \
   --update-env-vars COLOR=yellow \
   --max-instances 1
 
-# Deploy Slow Go Function
+# Deploy Slow Go Function (use quoted heredoc so `time.Sleep` is not interpreted by Bash)
 echo
 echo "${BLUE_TEXT}${BOLD_TEXT}Deploying Slow Go Function...${RESET_FORMAT}"
 echo
@@ -309,19 +313,23 @@ deploy_with_retry slow-function \
   --allow-unauthenticated \
   --max-instances 4
 
+# Test Slow Function
 echo
 echo "${BLUE_TEXT}${BOLD_TEXT}Testing Slow Function...${RESET_FORMAT}"
 gcloud functions call slow-function --gen2 --region $REGION || true
 
+# Deploy as Cloud Run Service (if needed)
 echo
 echo "${BLUE_TEXT}${BOLD_TEXT}Deploying as Cloud Run Service...${RESET_FORMAT}"
 
+# Progress Check
 function check_progress {
     while true; do
         echo
         echo "${CYAN_TEXT}${BOLD_TEXT} ------ PLEASE COMPLETE MANUAL STEP AND VERIFY YOUR PROGRESS UP TO TASK 6 ${RESET_FORMAT}"
         echo
         read -p "${BLUE_TEXT}${BOLD_TEXT}Have you completed Task 6? (Y/N): ${RESET_FORMAT}" user_input
+
         case $user_input in
             [Yy]*)
                 echo
@@ -342,12 +350,14 @@ function check_progress {
 }
 check_progress
 
+# Cleanup (delete previous Cloud Run service if exists)
 echo
 echo "${BLUE_TEXT}${BOLD_TEXT}Cleaning Up Previous Deployment...${RESET_FORMAT}"
 start_spinner "Deleting previous Cloud Run service slow-function"
 gcloud run services delete slow-function --region $REGION --quiet || true
 stop_spinner
 
+# Deploy Concurrent Function
 echo
 echo "${BLUE_TEXT}${BOLD_TEXT}Deploying Concurrent Function...${RESET_FORMAT}"
 deploy_with_retry slow-concurrent-function \
@@ -363,6 +373,7 @@ deploy_with_retry slow-concurrent-function \
 
 echo "${CYAN_TEXT}${BOLD_TEXT} ------ PLEASE COMPLETE MANUAL STEP AND VERIFY YOUR PROGRESS OF TASK 7 ${RESET_FORMAT}"
 
+# Final message ()
 echo
 echo "${GREEN_TEXT}${BOLD_TEXT}=======================================================${RESET_FORMAT}"
 echo "${GREEN_TEXT}${BOLD_TEXT}              LAB COMPLETED SUCCESSFULLY!              ${RESET_FORMAT}"
