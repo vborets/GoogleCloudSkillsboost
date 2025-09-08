@@ -26,51 +26,42 @@ echo "${WHITE_TEXT}📺 YouTube: ${BLUE_TEXT}https://www.youtube.com/@drabhishek
 echo "${WHITE_TEXT}⭐ Subscribe for more Cloud & DevOps Tutorials! ⭐${RESET_FORMAT}"
 echo
 
-# Get user input
-read -p "${CYAN_TEXT}${BOLD_TEXT}🌍 Enter The Region (e.g., us-central1): ${RESET_FORMAT}" LOCATION
-export LOCATION
-export MSG_BODY='Hello from Dr. Abhishek Tutorials!'
-
 # Step 1: Create Pub/Sub Topic
 echo
 echo "${BLUE_TEXT}${BOLD_TEXT}▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬${RESET_FORMAT}"
 echo "${BLUE_TEXT}${BOLD_TEXT}  🎯 STEP 1: Creating Pub/Sub Topic ${RESET_FORMAT}"
 echo "${BLUE_TEXT}${BOLD_TEXT}▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬${RESET_FORMAT}"
-gcloud pubsub topics create cloud-pubsub-topic
+gcloud pubsub topics create gcloud-pubsub-topic
 
 # Step 2: Create Subscription
 echo
 echo "${MAGENTA_TEXT}${BOLD_TEXT}▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬${RESET_FORMAT}"
 echo "${MAGENTA_TEXT}${BOLD_TEXT}  📩 STEP 2: Creating Subscription ${RESET_FORMAT}"
 echo "${MAGENTA_TEXT}${BOLD_TEXT}▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬${RESET_FORMAT}"
-gcloud pubsub subscriptions create cloud-pubsub-subscription --topic=cloud-pubsub-topic
+gcloud pubsub subscriptions create pubsub-subscription-message --topic=gcloud-pubsub-topic
 
-# Step 3: Enable Cloud Scheduler
+# Step 3: Publish Message
 echo
 echo "${GREEN_TEXT}${BOLD_TEXT}▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬${RESET_FORMAT}"
-echo "${GREEN_TEXT}${BOLD_TEXT}  ⏱️  STEP 3: Enabling Cloud Scheduler ${RESET_FORMAT}"
+echo "${GREEN_TEXT}${BOLD_TEXT}  ✉️  STEP 3: Publishing Message ${RESET_FORMAT}"
 echo "${GREEN_TEXT}${BOLD_TEXT}▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬${RESET_FORMAT}"
-gcloud services enable cloudscheduler.googleapis.com
+gcloud pubsub topics publish gcloud-pubsub-topic --message="Hello World"
 
-# Step 4: Create Scheduler Job
+# Step 4: Verify Messages
 echo
 echo "${YELLOW_TEXT}${BOLD_TEXT}▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬${RESET_FORMAT}"
-echo "${YELLOW_TEXT}${BOLD_TEXT}  🔄 STEP 4: Creating Scheduled Job (Every Minute) ${RESET_FORMAT}"
+echo "${YELLOW_TEXT}${BOLD_TEXT}  ✅ STEP 4: Verifying Message Delivery ${RESET_FORMAT}"
 echo "${YELLOW_TEXT}${BOLD_TEXT}▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬${RESET_FORMAT}"
-gcloud scheduler jobs create pubsub cron-scheduler-job \
-  --location=$LOCATION \
-  --schedule="* * * * *" \
-  --topic=cloud-pubsub-topic \
-  --message-body="$MSG_BODY"
-
-# Step 5: Verify Messages
-echo
-echo "${CYAN_TEXT}${BOLD_TEXT}▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬${RESET_FORMAT}"
-echo "${CYAN_TEXT}${BOLD_TEXT}  ✅ STEP 5: Verifying Message Delivery ${RESET_FORMAT}"
-echo "${CYAN_TEXT}${BOLD_TEXT}▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬${RESET_FORMAT}"
-echo "${WHITE_TEXT}Waiting 10 seconds for first message to arrive...${RESET_FORMAT}"
+echo "${WHITE_TEXT}Waiting 10 seconds for message to arrive...${RESET_FORMAT}"
 sleep 10
-gcloud pubsub subscriptions pull cloud-pubsub-subscription --limit 5
+gcloud pubsub subscriptions pull pubsub-subscription-message --limit 5
+
+# Step 5: Create Snapshot
+echo
+echo "${CYAN_TEXT}${BOLD_TEXT}▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬${RESET_FORMAT}"
+echo "${CYAN_TEXT}${BOLD_TEXT}  📸 STEP 5: Creating Snapshot ${RESET_FORMAT}"
+echo "${CYAN_TEXT}${BOLD_TEXT}▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬${RESET_FORMAT}"
+gcloud pubsub snapshots create pubsub-snapshot --subscription=pubsub-subscription-message
 
 # Completion Message
 echo
