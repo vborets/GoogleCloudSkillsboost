@@ -2,195 +2,128 @@
 
 set -euo pipefail
 
-# Color Definitions
-BOLD=$(tput bold)
-RED=$(tput setaf 1)
-GREEN=$(tput setaf 2)
-YELLOW=$(tput setaf 3)
-BLUE=$(tput setaf 4)
-MAGENTA=$(tput setaf 5)
-CYAN=$(tput setaf 6)
-WHITE=$(tput setaf 7)
-RESET=$(tput sgr0)
-
-# Function to show spinner while commands run
-spinner() {
-    local pid=$!
-    local delay=0.25
-    local spinstr='|/-\'
-    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
-        local temp=${spinstr#?}
-        printf " [%c]  " "$spinstr"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-        printf "\b\b\b\b\b\b"
-    done
-    printf "    \b\b\b\b"
-}
-
-# Welcome message
-echo "${CYAN}${BOLD}╔══════════════════════════════════════════════════════════════╗${RESET}"
-echo "${CYAN}${BOLD}          Welcome to Dr. Abhishek's Cloud Tutorials!           ${RESET}"
-echo "${CYAN}${BOLD}╚══════════════════════════════════════════════════════════════╝${RESET}"
-echo
-echo "${BLUE}${BOLD}    Network Connectivity Center (NCC) Setup Script             ${RESET}"
-echo "${YELLOW}For more GCP tutorials, visit: https://www.youtube.com/@drabhishek.5460${RESET}"
-echo
-echo "${GREEN}${BOLD}Starting deployment...${RESET}"
-echo
+# ---------------------------
+# Welcome Banner
+# ---------------------------
+echo "==============================================="
+echo " 🚀 Welcome to Dr Abhishek Cloud Tutorial 🚀 "
+echo " 👉 Subscribe here: https://www.youtube.com/@drabhishek.5460/videos"
+echo "==============================================="
 
 PROJECT_ID=$(gcloud config get-value project)
 HUB_NAME=ncc-hub
 
-echo -n "Detecting region from existing VPN tunnels... "
-REGION=$(gcloud compute vpn-tunnels list --format="value(region)" --limit=1) &
-spinner
+echo "Detecting region from existing VPN tunnels..."
+REGION=$(gcloud compute vpn-tunnels list --format="value(region)" --limit=1)
 
 if [[ -z "$REGION" ]]; then
-  echo "${RED}❌ Unable to detect region from VPN tunnels.${RESET}"
+  echo "Unable to detect region from VPN tunnels."
   exit 1
 fi
 
-echo "${GREEN}✅ Region detected: $REGION${RESET}"
+echo "Region detected: $REGION"
 
 # Create NCC Hub (location global)
 if gcloud network-connectivity hubs describe $HUB_NAME --project=$PROJECT_ID >/dev/null 2>&1; then
-  echo "${YELLOW}Hub $HUB_NAME already exists, skipping creation.${RESET}"
+  echo "Hub $HUB_NAME already exists, skipping creation."
 else
-  echo -n "🚀 Creating NCC hub $HUB_NAME... "
+  echo "Creating NCC hub $HUB_NAME..."
   gcloud network-connectivity hubs create $HUB_NAME \
     --project=$PROJECT_ID \
-    --description="Global NCC Hub" > /dev/null 2>&1 &
-  spinner
-  echo "${GREEN}Done${RESET}"
+    --description="Global NCC Hub"
 fi
 
 # Gather VPN tunnels for On-Prem Offices
-echo -n "Gathering VPN tunnels for On-Prem Offices... "
-OFFICE1_TUNNELS=$(gcloud compute vpn-tunnels list --filter="name~'office1'" --format="value(name)") &
-OFFICE2_TUNNELS=$(gcloud compute vpn-tunnels list --filter="name~'office2'" --format="value(name)") &
-spinner
+OFFICE1_TUNNELS=$(gcloud compute vpn-tunnels list --filter="name~'office1'" --format="value(name)")
+OFFICE2_TUNNELS=$(gcloud compute vpn-tunnels list --filter="name~'office2'" --format="value(name)")
 
 if [[ -z "$OFFICE1_TUNNELS" ]]; then
-  echo "${RED}❌ No Office 1 VPN tunnels found!${RESET}"
+  echo "No Office 1 VPN tunnels found!"
   exit 1
 fi
 
 if [[ -z "$OFFICE2_TUNNELS" ]]; then
-  echo "${RED}❌ No Office 2 VPN tunnels found!${RESET}"
+  echo "No Office 2 VPN tunnels found!"
   exit 1
 fi
 
-echo "${GREEN}✅ Found Office 1 tunnels: $(echo "$OFFICE1_TUNNELS" | wc -l)${RESET}"
-echo "${GREEN}✅ Found Office 2 tunnels: $(echo "$OFFICE2_TUNNELS" | wc -l)${RESET}"
-
 # Task 1: Connect two On-Prem VPCs using NCC (VPN spokes)
-echo
-echo "${BOLD}${RED}╔════════════════════════════════════════════════════════╗${RESET}"
-echo "${BOLD}${RED}        Connecting On-Prem VPCs using NCC Spokes         ${RESET}"
-echo "${BOLD}${RED}╚════════════════════════════════════════════════════════╝${RESET}"
-echo
 
-echo -n "🔧 Creating spokes for On-Prem Office 1 VPN tunnels... "
+echo "Creating spokes for On-Prem Office 1 VPN tunnels..."
 i=1
 while read -r tunnel_name; do
   tunnel_full="projects/$PROJECT_ID/regions/$REGION/vpnTunnels/$tunnel_name"
   spoke_name="office-1-spoke-$i"
-  
+  echo "Creating spoke $spoke_name for tunnel $tunnel_name"
+
   gcloud alpha network-connectivity spokes create $spoke_name \
     --project=$PROJECT_ID \
     --hub=$HUB_NAME \
     --region=$REGION \
     --vpn-tunnel=$tunnel_full \
-    --description="Spoke for On-Prem Office 1 tunnel $i" > /dev/null 2>&1 || echo "${YELLOW}⚠️ $spoke_name may already exist.${RESET}"
+    --description="Spoke for On-Prem Office 1 tunnel $i" || echo "⚠️ $spoke_name may already exist."
 
   ((i++))
-done <<< "$OFFICE1_TUNNELS" &
-spinner
-echo "${GREEN}Done${RESET}"
+done <<< "$OFFICE1_TUNNELS"
 
-echo -n "🔧 Creating spokes for On-Prem Office 2 VPN tunnels... "
+echo "Creating spokes for On-Prem Office 2 VPN tunnels..."
 i=1
 while read -r tunnel_name; do
   tunnel_full="projects/$PROJECT_ID/regions/$REGION/vpnTunnels/$tunnel_name"
   spoke_name="office-2-spoke-$i"
-  
+  echo "Creating spoke $spoke_name for tunnel $tunnel_name"
+
   gcloud alpha network-connectivity spokes create $spoke_name \
     --project=$PROJECT_ID \
     --hub=$HUB_NAME \
     --region=$REGION \
     --vpn-tunnel=$tunnel_full \
-    --description="Spoke for On-Prem Office 2 tunnel $i" > /dev/null 2>&1 || echo "${YELLOW}⚠️ $spoke_name may already exist.${RESET}"
+    --description="Spoke for On-Prem Office 2 tunnel $i" || echo "⚠️ $spoke_name may already exist."
 
   ((i++))
-done <<< "$OFFICE2_TUNNELS" &
-spinner
-echo "${GREEN}Done${RESET}"
+done <<< "$OFFICE2_TUNNELS"
 
 WORKLOAD_VPC1="workload-vpc-1"
 WORKLOAD_VPC2="workload-vpc-2"
 
-echo
-echo "${BOLD}${RED}╔════════════════════════════════════════════════════════╗${RESET}"
-echo "${BOLD}${RED}            Creating Workload VPC Spokes                 ${RESET}"
-echo "${BOLD}${RED}╚════════════════════════════════════════════════════════╝${RESET}"
-echo
+echo "Creating workload VPC spokes..."
 
-echo -n "🔧 Creating workload VPC spokes... "
 gcloud network-connectivity spokes linked-vpc-network create workload-1-spoke \
   --project=$PROJECT_ID \
   --hub=$HUB_NAME \
   --vpc-network=$WORKLOAD_VPC1 \
   --global \
-  --description="Spoke for Workload VPC 1" > /dev/null 2>&1 || echo "${YELLOW}⚠️ workload-1-spoke may already exist.${RESET}"
+  --description="Spoke for Workload VPC 1" || echo "⚠️ workload-1-spoke may already exist."
 
 gcloud network-connectivity spokes linked-vpc-network create workload-2-spoke \
   --project=$PROJECT_ID \
   --hub=$HUB_NAME \
   --vpc-network=$WORKLOAD_VPC2 \
   --global \
-  --description="Spoke for Workload VPC 2" > /dev/null 2>&1 || echo "${YELLOW}⚠️ workload-2-spoke may already exist.${RESET}" &
-spinner
-echo "${GREEN}Done${RESET}"
+  --description="Spoke for Workload VPC 2" || echo "⚠️ workload-2-spoke may already exist."
 
-echo
-echo "${BOLD}${RED}╔════════════════════════════════════════════════════════╗${RESET}"
-echo "${BOLD}${RED}            Creating Hybrid Spokes                       ${RESET}"
-echo "${BOLD}${RED}╚════════════════════════════════════════════════════════╝${RESET}"
-echo
+echo "Creating hybrid spoke for Workload VPC 1..."
 
-echo -n "🔧 Creating hybrid spokes for On-Prem Office 1 VPN tunnels... "
+# gcloud alpha network-connectivity spokes create hybrid-workload-1-spoke \
+#   --project=$PROJECT_ID \
+#   --hub=$HUB_NAME \
+#   --region=$REGION \
+#   --vpc-network=projects/$PROJECT_ID/global/networks/$WORKLOAD_VPC1 \
+#   --description="Hybrid spoke for Workload VPC 1" || echo "⚠️ hybrid-workload-1-spoke may already exist."
+
+echo "Creating hybrid spokes for On-Prem Office 1 VPN tunnels..."
 i=1
 while read -r tunnel_name; do
   tunnel_full="projects/$PROJECT_ID/regions/$REGION/vpnTunnels/$tunnel_name"
   spoke_name="hybrid-office-1-spoke-$i"
-  
+  echo "Creating hybrid spoke $spoke_name for tunnel $tunnel_name"
+
   gcloud alpha network-connectivity spokes create $spoke_name \
     --project=$PROJECT_ID \
     --hub=$HUB_NAME \
     --region=$REGION \
     --vpn-tunnel=$tunnel_full \
-    --description="Hybrid spoke for On-Prem Office 1 tunnel $i" > /dev/null 2>&1 || echo "${YELLOW}⚠️ $spoke_name may already exist.${RESET}"
+    --description="Hybrid spoke for On-Prem Office 1 tunnel $i" || echo "⚠️ $spoke_name may already exist."
 
   ((i++))
-done <<< "$OFFICE1_TUNNELS" &
-spinner
-echo "${GREEN}Done${RESET}"
-
-echo
-echo "${CYAN}${BOLD}╔══════════════════════════════════════════════════════════════╗${RESET}"
-echo "${CYAN}${BOLD}               NCC SETUP COMPLETED SUCCESSFULLY!               ${RESET}"
-echo "${CYAN}${BOLD}╚══════════════════════════════════════════════════════════════╝${RESET}"
-echo "${GREEN}✅ NCC Hub: $HUB_NAME${RESET}"
-echo "${GREEN}✅ Region: $REGION${RESET}"
-echo "${GREEN}✅ Office 1 Spokes: $(echo "$OFFICE1_TUNNELS" | wc -l) created${RESET}"
-echo "${GREEN}✅ Office 2 Spokes: $(echo "$OFFICE2_TUNNELS" | wc -l) created${RESET}"
-echo "${GREEN}✅ Workload VPC Spokes: 2 created${RESET}"
-echo "${GREEN}✅ Hybrid Spokes: $(echo "$OFFICE1_TUNNELS" | wc -l) created${RESET}"
-echo
-echo "${BOLD}${MAGENTA}Thank you for following along with Dr. Abhishek's${RESET}"
-echo "${BOLD}${MAGENTA}Cloud Tutorial! Don't forget to like the video${RESET}"
-echo "${BOLD}${MAGENTA}and subscribe to the channel for more content!${RESET}"
-echo "${CYAN}${BOLD}╔══════════════════════════════════════════════════════════════╗${RESET}"
-echo "${CYAN}${BOLD}        YouTube: https://www.youtube.com/@drabhishek.5460       ${RESET}"
-echo "${CYAN}${BOLD}╚══════════════════════════════════════════════════════════════╝${RESET}"
+done <<< "$OFFICE1_TUNNELS"
