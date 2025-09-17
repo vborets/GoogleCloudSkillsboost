@@ -1,48 +1,114 @@
 #!/bin/bash
 
-# Enhanced Color Definitions
-BLACK=$(tput setaf 0)
-RED=$(tput setaf 1)
-GREEN=$(tput setaf 2)
-YELLOW=$(tput setaf 3)
-BLUE=$(tput setaf 4)
-MAGENTA=$(tput setaf 5)
-CYAN=$(tput setaf 6)
-WHITE=$(tput setaf 7)
-BOLD=$(tput bold)
-RESET=$(tput sgr0)
+# Color codes for formatting
+RED='\e[1;31m'
+GREEN='\e[1;32m'
+YELLOW='\e[1;33m'
+BLUE='\e[1;34m'
+MAGENTA='\e[1;35m'
+CYAN='\e[1;36m'
+WHITE='\e[1;37m'
+NC='\e[0m' # No Color
 
-# Display Header
-clear
-echo "${YELLOW}${BOLD}================================================${RESET}"
-echo "${YELLOW}${BOLD}   DR. ABHISHEK'S GKE DEPLOYMENT LAB           ${RESET}"
-echo "${YELLOW}${BOLD}================================================${RESET}"
-echo "${BLUE}YouTube Channel: https://www.youtube.com/@drabhishek.5460${RESET}"
-echo "${CYAN}Video Tutorials: https://www.youtube.com/@drabhishek.5460/videos${RESET}"
-echo
+# Function to display spinner
+spinner() {
+    local pid=$1
+    local delay=0.1
+    local spinstr='|/-\'
+    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+        local temp=${spinstr#?}
+        printf " [%c]  " "$spinstr"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b"
+    done
+    printf "    \b\b\b\b"
+}
 
-# Get Zone Input
-echo "${CYAN}${BOLD}Step 1: Please enter your preferred zone (e.g., us-central1-a):${RESET}"
-read ZONE
-export ZONE
-echo "${GREEN}✓ Zone set to: ${ZONE}${RESET}"
-echo
+# Function to print section header
+print_header() {
+    echo -e "\n${MAGENTA}╔══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${MAGENTA}║${NC} ${CYAN}$1${NC} ${MAGENTA}║${NC}"
+    echo -e "${MAGENTA}╚══════════════════════════════════════════════════════════════╝${NC}"
+}
 
-# Initialize Project
-echo "${CYAN}${BOLD}Step 2: Initializing Google Cloud Project...${RESET}"
-gcloud config set compute/zone $ZONE
-export PROJECT_ID=$(gcloud config get-value project)
-echo "${GREEN}✓ Project initialized: ${PROJECT_ID}${RESET}"
-echo
+# Function to print success message
+print_success() {
+    echo -e "${GREEN}✅ $1${NC}"
+}
 
-# Create GKE Cluster
-echo "${CYAN}${BOLD}Step 3: Creating GKE Cluster with 3 nodes...${RESET}"
-gcloud container clusters create test-cluster --num-nodes=3 --enable-ip-alias
-echo "${GREEN}✓ Cluster 'test-cluster' created successfully${RESET}"
-echo
+# Function to print error message
+print_error() {
+    echo -e "${RED}❌ $1${NC}"
+}
 
-# Deploy Frontend Application
-echo "${CYAN}${BOLD}Step 4: Deploying Frontend Application...${RESET}"
+# Function to print info message
+print_info() {
+    echo -e "${BLUE}ℹ️  $1${NC}"
+}
+
+# Welcome message with animation
+echo -e "${CYAN}"
+cat << "EOF"
+  _    _ _   _ _ _ _          _   _           _     
+ | |  | | | | | | | |        | | | |         | |    
+ | |  | | | | | | | | ___  __| | | |__   __ _| |__  
+ | |  | | | | | | | |/ _ \/ _` | | '_ \ / _` | '_ \ 
+ | |__| | |_| | | | |  __/ (_| | | | | | (_| | | | |
+  \____/ \___/|_|_|_|\___|\__,_| |_| |_|\__,_|_| |_|
+EOF
+echo -e "${NC}"
+
+# Dr. Abhishek YouTube promotion
+echo -e "${YELLOW}📺 Welcome to Advanced Kubernetes Lab!${NC}"
+echo -e "${MAGENTA}🌟 Don't forget to subscribe to:${NC}"
+echo -e "${CYAN}   Dr. Abhishek YouTube Channel:${NC} ${WHITE}https://www.youtube.com/@drabhishek.5460/videos${NC}"
+echo -ne "${GREEN}   Loading awesome content:${NC} "
+(sleep 2) & spinner $!
+echo -e "${GREEN}✅ Ready to learn!${NC}"
+
+# Fetch zone and region
+print_header "Fetching Google Cloud Configuration"
+print_info "Getting zone, region, and project details..."
+ZONE=$(gcloud compute project-info describe \
+  --format="value(commonInstanceMetadata.items[google-compute-default-zone])" 2>/dev/null)
+REGION=$(gcloud compute project-info describe \
+  --format="value(commonInstanceMetadata.items[google-compute-default-region])" 2>/dev/null)
+PROJECT_ID=$(gcloud config get-value project 2>/dev/null)
+
+if [ -z "$ZONE" ] || [ -z "$REGION" ] || [ -z "$PROJECT_ID" ]; then
+    print_error "Failed to get Google Cloud configuration. Please check your gcloud setup."
+    exit 1
+fi
+
+print_success "Zone: $ZONE"
+print_success "Region: $REGION"
+print_success "Project ID: $PROJECT_ID"
+
+# Set up Google Cloud configuration
+print_info "Setting up Google Cloud configuration..."
+gcloud auth list &
+spinner $!
+
+gcloud config set project $DEVSHELL_PROJECT_ID &
+spinner $!
+
+gcloud config set compute/zone "$ZONE" &
+spinner $!
+
+gcloud config set compute/region "$REGION" &
+spinner $!
+
+# Create GKE cluster
+print_header "Creating GKE Cluster"
+print_info "Creating test-cluster with 3 nodes and IP alias..."
+gcloud container clusters create test-cluster --num-nodes=3 --enable-ip-alias &
+spinner $!
+print_success "GKE cluster created successfully!"
+
+# Create frontend pod
+print_header "Creating Frontend Pod"
+print_info "Creating gb-frontend pod configuration..."
 cat << EOF > gb_frontend_pod.yaml
 apiVersion: v1
 kind: Pod
@@ -62,12 +128,13 @@ spec:
       - containerPort: 80
 EOF
 
-kubectl apply -f gb_frontend_pod.yaml
-echo "${GREEN}✓ Frontend pod deployed${RESET}"
-echo
+kubectl apply -f gb_frontend_pod.yaml &
+spinner $!
+print_success "Frontend pod created successfully!"
 
-# Create ClusterIP Service
-echo "${CYAN}${BOLD}Step 5: Creating ClusterIP Service...${RESET}"
+# Create ClusterIP service
+print_header "Creating ClusterIP Service"
+print_info "Creating gb-frontend service..."
 cat << EOF > gb_frontend_cluster_ip.yaml
 apiVersion: v1
 kind: Service
@@ -85,12 +152,13 @@ spec:
     targetPort: 80
 EOF
 
-kubectl apply -f gb_frontend_cluster_ip.yaml
-echo "${GREEN}✓ ClusterIP service created${RESET}"
-echo
+kubectl apply -f gb_frontend_cluster_ip.yaml &
+spinner $!
+print_success "ClusterIP service created successfully!"
 
 # Create Ingress
-echo "${CYAN}${BOLD}Step 6: Creating Ingress...${RESET}"
+print_header "Creating Ingress"
+print_info "Setting up ingress for the application..."
 cat << EOF > gb_frontend_ingress.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -104,60 +172,72 @@ spec:
         number: 80
 EOF
 
-kubectl apply -f gb_frontend_ingress.yaml
-echo "${GREEN}✓ Ingress created${RESET}"
-echo
+kubectl apply -f gb_frontend_ingress.yaml &
+spinner $!
+print_success "Ingress created successfully!"
 
-# Wait for resources
-echo "${YELLOW}${BOLD}Waiting for resources to stabilize (70 seconds)...${RESET}"
-sleep 70
-echo "${GREEN}✓ Resources stabilized${RESET}"
-echo
+# Wait for backend services
+print_info "Waiting for backend services to be ready..."
+sleep 600 &
+spinner $!
 
-# Check Backend Health
-echo "${CYAN}${BOLD}Step 7: Checking Backend Service Health...${RESET}"
+# Check backend service health
+print_header "Checking Backend Service Health"
 BACKEND_SERVICE=$(gcloud compute backend-services list | grep NAME | cut -d ' ' -f2)
+print_info "Checking health of backend service: $BACKEND_SERVICE"
 gcloud compute backend-services get-health $BACKEND_SERVICE --global
-echo "${GREEN}✓ Backend health checked${RESET}"
-echo
 
-# Get Ingress Details
-echo "${CYAN}${BOLD}Step 8: Retrieving Ingress Details...${RESET}"
+# Get ingress details
+print_info "Getting ingress details..."
 kubectl get ingress gb-frontend-ingress
-echo "${GREEN}✓ Ingress details retrieved${RESET}"
-echo
 
-# Task 1 Confirmation
-echo "${MAGENTA}${BOLD}Please verify Task 1 completion before proceeding${RESET}"
+# Part 2 - Confirmation
+print_header "PART 2: Advanced Kubernetes Features"
 while true; do
-    read -p "${YELLOW}Have you checked the progress for Task 1? (Y/N): ${RESET}" user_input
-    case $user_input in
-        [Yy]|[Yy][Ee][Ss])
-            echo "${GREEN}Proceeding to next steps...${RESET}"
+    echo -ne "${YELLOW}🎯 Do you want to proceed with Part 2? ${NC}[${GREEN}Y${NC}/${RED}N${NC}]: "
+    read confirm
+    case "$confirm" in
+        [Yy]) 
+            echo -e "${GREEN}🚀 Continuing with Part 2...${NC}"
             break
             ;;
-        [Nn]|[Nn][Oo])
-            echo "${RED}Please check Task 1 progress before continuing${RESET}"
+        [Nn]|"") 
+            echo -e "${YELLOW}⏸️  Operation canceled.${NC}"
+            exit 0
             ;;
-        *)
-            echo "${RED}Invalid input. Please enter Y or N.${RESET}"
+        *) 
+            echo -e "${RED}❌ Invalid input. Please enter Y or N.${NC}" 
             ;;
     esac
 done
-echo
 
-# Deploy Locust Load Testing
-echo "${CYAN}${BOLD}Step 9: Deploying Locust Load Testing...${RESET}"
-gsutil -m cp -r gs://spls/gsp769/locust-image .
-gcloud builds submit --tag gcr.io/${GOOGLE_CLOUD_PROJECT}/locust-tasks:latest locust-image
-gsutil cp gs://spls/gsp769/locust_deploy_v2.yaml .
-sed 's/${GOOGLE_CLOUD_PROJECT}/'$GOOGLE_CLOUD_PROJECT'/g' locust_deploy_v2.yaml | kubectl apply -f -
-echo "${GREEN}✓ Locust deployed${RESET}"
-echo
+# Copy Locust files
+print_header "Setting Up Load Testing with Locust"
+print_info "Copying Locust image files..."
+gsutil -m cp -r gs://spls/gsp769/locust-image . &
+spinner $!
 
-# Liveness Probe Demo
-echo "${CYAN}${BOLD}Step 10: Demonstrating Liveness Probe...${RESET}"
-cat << EOF > liveness-demo.yaml
+# Build and deploy Locust
+print_info "Building Locust container image..."
+gcloud builds submit --tag gcr.io/${GOOGLE_CLOUD_PROJECT}/locust-tasks:latest locust-image &
+spinner $!
+
+print_info "Deploying Locust to Kubernetes..."
+gsutil cp gs://spls/gsp769/locust_deploy_v2.yaml . &
+spinner $!
+
+sed 's/${GOOGLE_CLOUD_PROJECT}/'$GOOGLE_CLOUD_PROJECT'/g' locust_deploy_v2.yaml | kubectl apply -f - &
+spinner $!
+print_success "Locust deployed successfully!"
+
+# Check Locust service
+print_info "Getting Locust service details..."
+kubectl get service locust-main
+
+# Liveness probe demo
+print_header "Liveness Probe Demo"
+print_info "Creating liveness probe demonstration..."
+cat > liveness-demo.yaml <<EOF_END
 apiVersion: v1
 kind: Pod
 metadata:
@@ -179,19 +259,24 @@ spec:
         - /tmp/alive
       initialDelaySeconds: 5
       periodSeconds: 10
-EOF
+EOF_END
 
-kubectl apply -f liveness-demo.yaml
-sleep 10
-kubectl describe pod liveness-demo-pod
-kubectl exec liveness-demo-pod -- rm /tmp/alive
-sleep 10
-kubectl describe pod liveness-demo-pod
-echo "${GREEN}✓ Liveness probe demonstrated${RESET}"
-echo
+kubectl apply -f liveness-demo.yaml &
+spinner $!
 
-# Readiness Probe Demo
-echo "${CYAN}${BOLD}Step 11: Demonstrating Readiness Probe...${RESET}"
+print_info "Describing liveness demo pod..."
+kubectl describe pod liveness-demo-pod
+
+print_info "Testing liveness probe by removing health file..."
+kubectl exec liveness-demo-pod -- rm /tmp/alive &
+spinner $!
+
+print_info "Checking pod status after liveness failure..."
+kubectl describe pod liveness-demo-pod
+
+# Readiness probe demo
+print_header "Readiness Probe Demo"
+print_info "Creating readiness probe demonstration..."
 cat << EOF > readiness-demo.yaml
 apiVersion: v1
 kind: Pod
@@ -229,17 +314,33 @@ spec:
     demo: readiness-probe
 EOF
 
-kubectl apply -f readiness-demo.yaml
-sleep 20
-kubectl exec readiness-demo-pod -- touch /tmp/healthz
-sleep 10
-kubectl describe pod readiness-demo-pod | grep ^Conditions -A 5
-echo "${GREEN}✓ Readiness probe demonstrated${RESET}"
-echo
+kubectl apply -f readiness-demo.yaml &
+spinner $!
 
-# Frontend Deployment
-echo "${CYAN}${BOLD}Step 12: Creating Frontend Deployment...${RESET}"
-kubectl delete pod gb-frontend
+print_info "Getting readiness service details..."
+kubectl get service readiness-demo-svc
+
+print_info "Describing readiness demo pod..."
+kubectl describe pod readiness-demo-pod
+
+print_info "Waiting for pod to stabilize..."
+sleep 45 &
+spinner $!
+
+print_info "Making pod ready by creating health file..."
+kubectl exec readiness-demo-pod -- touch /tmp/healthz &
+spinner $!
+
+print_info "Checking pod conditions..."
+kubectl describe pod readiness-demo-pod | grep ^Conditions -A 5
+
+# Frontend deployment
+print_header "Creating Frontend Deployment"
+print_info "Deleting standalone pod..."
+kubectl delete pod gb-frontend &
+spinner $!
+
+print_info "Creating deployment with 5 replicas..."
 cat << EOF > gb_frontend_deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -269,26 +370,33 @@ spec:
               protocol: TCP
 EOF
 
-kubectl apply -f gb_frontend_deployment.yaml
-echo "${GREEN}✓ Frontend deployment created${RESET}"
-echo
+kubectl apply -f gb_frontend_deployment.yaml &
+spinner $!
+print_success "Frontend deployment created with 5 replicas!"
 
-# Cleanup
-SCRIPT_NAME="abhishek.sh"
-if [ -f "$SCRIPT_NAME" ]; then
-    echo "${RED}${BOLD}Removing temporary script for security...${RESET}"
-    rm -- "$SCRIPT_NAME"
+# Final Locust setup
+print_header "Finalizing Load Testing Setup"
+print_info "Rebuilding Locust image..."
+gcloud builds submit --tag gcr.io/${GOOGLE_CLOUD_PROJECT}/locust-tasks:latest locust-image &
+spinner $!
+
+print_info "Getting Locust UI IP address..."
+export LOCUST_IP=$(kubectl get svc locust-main -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+
+if [ -n "$LOCUST_IP" ]; then
+    print_success "Locust UI IP: $LOCUST_IP"
+    echo -e "\n${CYAN}=================================================${NC}"
+    echo -e "${GREEN}🎉 Lab Setup Completed Successfully!${NC}"
+    echo -e "${YELLOW}🌐 Your Locust UI is available at:${NC}"
+    echo -e "${WHITE}   http://$LOCUST_IP:8089 ${NC}🚀"
+    echo -e "${CYAN}=================================================${NC}"
+else
+    print_warning "Locust service IP not available yet. Please check later with:"
+    echo -e "${BLUE}kubectl get svc locust-main${NC}"
 fi
 
-# Completion Message
-echo "${MAGENTA}${BOLD}============================================${RESET}"
-echo "${MAGENTA}${BOLD}   GKE DEPLOYMENT LAB COMPLETED SUCCESSFULLY!${RESET}"
-echo "${MAGENTA}${BOLD}============================================${RESET}"
-echo
-echo "${GREEN}${BOLD}Congratulations on completing the lab!${RESET}"
-echo
-echo "${BLUE}${BOLD}For more cloud tutorials:${RESET}"
-echo "${CYAN}Subscribe to Dr. Abhishek's YouTube Channel:${RESET}"
-echo "${YELLOW}https://www.youtube.com/@drabhishek.5460${RESET}"
-echo "${CYAN}Video Tutorials:${RESET}"
-echo "${YELLOW}https://www.youtube.com/@drabhishek.5460/videos${RESET}"
+# Final message
+echo -e "\n${MAGENTA}🙏 Thank you for completing the Advanced Kubernetes Lab!${NC}"
+echo -e "${CYAN}📚 Learn more from Dr. Abhishek's YouTube channel:${NC}"
+echo -e "${WHITE}   https://www.youtube.com/@drabhishek.5460/videos${NC}"
+echo -e "${YELLOW}⭐ Don't forget to like and subscribe!${NC}"
