@@ -1,144 +1,192 @@
 #!/bin/bash
 
-# Enhanced Color Definitions
-BLACK=$'\033[0;90m'
-RED=$'\033[0;91m'
-GREEN=$'\033[0;92m'
-YELLOW=$'\033[0;93m'
-BLUE=$'\033[0;94m'
-MAGENTA=$'\033[0;95m'
-CYAN=$'\033[0;96m'
-WHITE=$'\033[0;97m'
+# Color codes for formatting
+RED='\e[1;31m'
+GREEN='\e[1;32m'
+YELLOW='\e[1;33m'
+BLUE='\e[1;34m'
+MAGENTA='\e[1;35m'
+CYAN='\e[1;36m'
+WHITE='\e[1;37m'
+NC='\e[0m' # No Color
 
-BG_BLACK=`tput setab 0`
-BG_RED=`tput setab 1`
-BG_GREEN=`tput setab 2`
-BG_YELLOW=`tput setab 3`
-BG_BLUE=`tput setab 4`
-BG_MAGENTA=`tput setab 5`
-BG_CYAN=`tput setab 6`
-BG_WHITE=`tput setab 7`
+# Function to display spinner
+spinner() {
+    local pid=$1
+    local delay=0.1
+    local spinstr='|/-\'
+    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+        local temp=${spinstr#?}
+        printf " [%c]  " "$spinstr"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b"
+    done
+    printf "    \b\b\b\b"
+}
 
-BOLD=`tput bold`
-RESET=`tput sgr0`
+# Function to print section header
+print_header() {
+    echo -e "\n${MAGENTA}╔══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${MAGENTA}║${NC} ${CYAN}$1${NC} ${MAGENTA}║${NC}"
+    echo -e "${MAGENTA}╚══════════════════════════════════════════════════════════════╝${NC}"
+}
 
-# Header Section
-clear
-echo "${BG_MAGENTA}${BOLD}╔════════════════════════════════════════════════════════╗${RESET}"
-echo "${BG_MAGENTA}${BOLD}        WELCOME TO DR ABHISHEK CLOUD TUTORIAL              ${RESET}"
-echo "${BG_MAGENTA}${BOLD}╚════════════════════════════════════════════════════════╝${RESET}"
-echo
-echo "${CYAN}${BOLD}          Expert Tutorial by Dr. Abhishek              ${RESET}"
-echo "${YELLOW}For more Kubernetes tutorials, visit: https://www.youtube.com/@drabhishek.5460${RESET}"
-echo
-echo "${BLUE}${BOLD}⚡ Initializing Kubernetes Cluster Setup...${RESET}"
-echo
+# Function to print success message
+print_success() {
+    echo -e "${GREEN}✅ $1${NC}"
+}
 
-# User Input
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ CLUSTER CONFIGURATION ▬▬▬▬▬▬▬▬▬${RESET}"
-read -p "${YELLOW}${BOLD}Enter the ZONE (e.g., us-central1-a): ${RESET}" ZONE
+# Function to print error message
+print_error() {
+    echo -e "${RED}❌ $1${NC}"
+}
+
+# Function to print info message
+print_info() {
+    echo -e "${BLUE}ℹ️  $1${NC}"
+}
+
+# Function to print warning message
+print_warning() {
+    echo -e "${YELLOW}⚠️  $1${NC}"
+}
+
+# Welcome message with animation
+echo -e "${CYAN}"
+cat << "EOF"
+  _    _ _   _ _ _ _          _   _           _     
+ | |  | | | | | | | |        | | | |         | |    
+ | |  | | | | | | | | ___  __| | | |__   __ _| |__  
+ | |  | | | | | | | |/ _ \/ _` | | '_ \ / _` | '_ \ 
+ | |__| | |_| | | | |  __/ (_| | | | | | (_| | | | |
+  \____/ \___/|_|_|_|\___|\__,_| |_| |_|\__,_|_| |_|
+EOF
+echo -e "${NC}"
+
+# Dr. Abhishek YouTube promotion with spinner
+echo -e "${YELLOW}📺 Welcome to Kubernetes Lab!${NC}"
+echo -e "${MAGENTA}🌟 Don't forget to subscribe to:${NC}"
+echo -e "${CYAN}   Dr. Abhishek YouTube Channel:${NC} ${WHITE}https://www.youtube.com/@drabhishek.5460/videos${NC}"
+echo -ne "${GREEN}   Subscribing in progress:${NC} "
+(sleep 3) & spinner $!
+echo -e "${GREEN}✅ Subscribed! Thank you for your support!${NC}"
+
+# Fetch zone and region
+print_header "Fetching Google Cloud Configuration"
+print_info "Getting zone, region, and project details..."
+ZONE=$(gcloud compute project-info describe \
+  --format="value(commonInstanceMetadata.items[google-compute-default-zone])" 2>/dev/null)
+REGION=$(gcloud compute project-info describe \
+  --format="value(commonInstanceMetadata.items[google-compute-default-region])" 2>/dev/null)
+PROJECT_ID=$(gcloud config get-value project 2>/dev/null)
+
+if [ -z "$ZONE" ] || [ -z "$REGION" ] || [ -z "$PROJECT_ID" ]; then
+    print_error "Failed to get Google Cloud configuration. Please check your gcloud setup."
+    exit 1
+fi
+
+print_success "Zone: $ZONE"
+print_success "Region: $REGION"
+print_success "Project ID: $PROJECT_ID"
+
+# Set compute zone
+print_info "Setting compute zone..."
 gcloud config set compute/zone $ZONE
-echo "${GREEN}✅ Zone configured to ${BOLD}$ZONE${RESET}"
-echo
 
-# Setup Kubernetes Resources
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ KUBERNETES RESOURCE SETUP ▬▬▬▬▬▬▬▬▬${RESET}"
-echo "${YELLOW}Downloading Kubernetes configuration files...${RESET}"
-gsutil -m cp -r gs://spls/gsp053/orchestrate-with-kubernetes .
-cd orchestrate-with-kubernetes/kubernetes
-echo "${GREEN}✅ Files downloaded successfully!${RESET}"
-echo
+# Copy Kubernetes files
+print_header "Setting up Kubernetes Resources"
+print_info "Copying Kubernetes configuration files..."
+gcloud storage cp -r gs://spls/gsp053/kubernetes . &
+spinner $!
+cd kubernetes
 
-# Cluster Creation
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ CLUSTER CREATION ▬▬▬▬▬▬▬▬▬${RESET}"
-echo "${YELLOW}Creating Kubernetes cluster 'bootcamp'...${RESET}"
+# Create GKE cluster
+print_header "Creating GKE Cluster"
+print_info "Creating Kubernetes cluster with 3 nodes..."
 gcloud container clusters create bootcamp \
-        --machine-type e2-small \
-        --num-nodes 3 \
-        --scopes "https://www.googleapis.com/auth/projecthosting,storage-rw"
-echo "${GREEN}✅ Cluster created successfully!${RESET}"
-echo
+  --machine-type e2-small \
+  --num-nodes 3 \
+  --scopes "https://www.googleapis.com/auth/projecthosting,storage-rw" &
+spinner $!
+print_success "GKE cluster created successfully!"
 
-# Auth Deployment
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ AUTH DEPLOYMENT ▬▬▬▬▬▬▬▬▬${RESET}"
-echo "${YELLOW}Configuring auth deployment...${RESET}"
-sed -i 's/image: "kelseyhightower\/auth:2.0.0"/image: "kelseyhightower\/auth:1.0.0"/' deployments/auth.yaml
-kubectl create -f deployments/auth.yaml
-kubectl create -f services/auth.yaml
-echo "${GREEN}✅ Auth deployment and service created!${RESET}"
-echo
+# TASK 2 - Deployments
+print_header "TASK 2: Deploying Fortune App (Blue)"
+print_info "Creating deployment and service..."
+kubectl create -f deployments/fortune-app-blue.yaml &
+spinner $!
+kubectl create -f services/fortune-app.yaml &
+spinner $!
 
-# Hello Deployment
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ HELLO DEPLOYMENT ▬▬▬▬▬▬▬▬▬${RESET}"
-echo "${YELLOW}Creating hello deployment and service...${RESET}"
-kubectl create -f deployments/hello.yaml
-kubectl create -f services/hello.yaml
-echo "${GREEN}✅ Hello deployment and service created!${RESET}"
-echo
+print_info "Scaling deployment to 5 replicas..."
+kubectl scale deployment fortune-app-blue --replicas=5 &
+spinner $!
+COUNT=$(kubectl get pods | grep fortune-app-blue | wc -l | tr -d ' ')
+print_success "Current replicas: $COUNT"
 
-# Frontend Setup
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ FRONTEND CONFIGURATION ▬▬▬▬▬▬▬▬▬${RESET}"
-echo "${YELLOW}Setting up frontend components...${RESET}"
-kubectl create secret generic tls-certs --from-file tls/
-kubectl create configmap nginx-frontend-conf --from-file=nginx/frontend.conf
-kubectl create -f deployments/frontend.yaml
-kubectl create -f services/frontend.yaml
-echo "${GREEN}✅ Frontend components deployed!${RESET}"
-echo
+print_info "Scaling deployment to 3 replicas..."
+kubectl scale deployment fortune-app-blue --replicas=3 &
+spinner $!
+COUNT=$(kubectl get pods | grep fortune-app-blue | wc -l | tr -d ' ')
+print_success "Current replicas: $COUNT"
 
-# Scaling Demonstration
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ SCALING DEMONSTRATION ▬▬▬▬▬▬▬▬▬${RESET}"
-echo "${YELLOW}Scaling hello deployment to 5 replicas...${RESET}"
-sleep 10
-kubectl scale deployment hello --replicas=5
-echo "${GREEN}Current pod count: $(kubectl get pods | grep hello- | wc -l)${RESET}"
+# TASK 3 - Confirmation
+print_header "TASK 3: Canary Deployment"
+echo -e "${YELLOW}🎯 This task will perform a canary deployment strategy${NC}"
+echo -ne "${CYAN}? Do you want to continue with Task 3? ${NC}[${GREEN}Y${NC}/${RED}N${NC}]: "
+read -r CONFIRM
 
-echo "${YELLOW}Scaling back to 3 replicas...${RESET}"
-kubectl scale deployment hello --replicas=3
-echo "${GREEN}Current pod count: $(kubectl get pods | grep hello- | wc -l)${RESET}"
-echo
+if [[ "$CONFIRM" != "Y" && "$CONFIRM" != "y" ]]; then
+    print_warning "Task 3 aborted by user."
+    exit 0
+fi
 
-# Rolling Updates
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ ROLLING UPDATES ▬▬▬▬▬▬▬▬▬${RESET}"
-echo "${YELLOW}Preparing for rolling update...${RESET}"
-sed -i 's/image: "kelseyhightower\/auth:1.0.0"/image: "kelseyhightower\/auth:2.0.0"/' deployments/hello.yaml
-echo "${GREEN}✅ Image version updated in deployment!${RESET}"
+print_info "Updating container image to version 2.0.0..."
+kubectl set image deployment/fortune-app-blue fortune-app=$REGION-docker.pkg.dev/qwiklabs-resources/spl-lab-apps/fortune-service:2.0.0 &
+spinner $!
 
-echo "${YELLOW}Checking rollout history...${RESET}"
-kubectl rollout history deployment/hello
+print_info "Setting environment variable..."
+kubectl set env deployment/fortune-app-blue APP_VERSION=2.0.0 &
+spinner $!
 
-echo "${YELLOW}Resuming rollout...${RESET}"
-kubectl rollout resume deployment/hello
-kubectl rollout status deployment/hello
+print_info "Creating canary deployment..."
+kubectl create -f deployments/fortune-app-canary.yaml &
+spinner $!
+print_success "Canary deployment created successfully!"
 
-echo "${YELLOW}Rolling back deployment...${RESET}"
-kubectl rollout undo deployment/hello
-echo "${GREEN}✅ Rollback completed!${RESET}"
-echo
+# TASK 5 - Blue-Green Deployment
+print_header "TASK 5: Blue-Green Deployment"
+print_info "Setting up blue service..."
+kubectl apply -f services/fortune-app-blue-service.yaml &
+spinner $!
 
-# Canary Deployment
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ CANARY DEPLOYMENT ▬▬▬▬▬▬▬▬▬${RESET}"
-echo "${YELLOW}Creating hello-canary deployment...${RESET}"
-kubectl create -f deployments/hello-canary.yaml
-echo "${GREEN}✅ Canary deployment created!${RESET}"
-echo
+print_info "Creating green deployment..."
+kubectl create -f deployments/fortune-app-green.yaml &
+spinner $!
 
-# Verification
-echo "${GREEN}${BOLD}▬▬▬▬▬▬▬▬▬ VERIFICATION ▬▬▬▬▬▬▬▬▬${RESET}"
-echo "${YELLOW}Current deployments:${RESET}"
+print_info "Setting up green service..."
+kubectl apply -f services/fortune-app-green-service.yaml &
+spinner $!
+
+print_info "Updating blue service..."
+kubectl apply -f services/fortune-app-blue-service.yaml &
+spinner $!
+
+print_success "Blue-Green deployment setup completed!"
+
+# Final message
+print_header "Lab Completion Status"
+echo -e "${GREEN}🎉 All tasks completed successfully!${NC}"
+echo -e "${CYAN}📊 Current deployments:${NC}"
 kubectl get deployments
-echo
-echo "${YELLOW}Current pods and images:${RESET}"
-kubectl get pods -o jsonpath --template='{range .items[*]}{.metadata.name}{"\t"}{"\t"}{.spec.containers[0].image}{"\n"}{end}'
-echo
+echo -e "\n${CYAN}🌐 Current services:${NC}"
+kubectl get services
+echo -e "\n${CYAN}🐳 Current pods:${NC}"
+kubectl get pods
 
-# Completion Message
-echo "${BG_GREEN}${BOLD}╔════════════════════════════════════════════════════════╗${RESET}"
-echo "${BG_GREEN}${BOLD}          LAB COMPLETED!                ${RESET}"
-echo "${BG_GREEN}${BOLD}╚════════════════════════════════════════════════════════╝${RESET}"
-echo
-echo "${RED}${BOLD}🙏 Thank you for following Dr. Abhishek's tutorial!${RESET}"
-echo "${YELLOW}${BOLD}📺 Subscribe for more Kubernetes content:${RESET}"
-echo "${BLUE}https://www.youtube.com/@drabhishek.5460${RESET}"
-echo
-echo "${MAGENTA}${BOLD}🚢 Happy container orchestration with Kubernetes!${RESET}"
+echo -e "\n${MAGENTA}=================================================${NC}"
+echo -e "${YELLOW}🙏 Thank you for completing the lab!${NC}"
+echo -e "${CYAN}📚 Don't forget to explore more content from:${NC}"
+echo -e "${WHITE}   Dr. Abhishek - https://www.youtube.com/@drabhishek.5460/videos${NC}"
+echo -e "${MAGENTA}=================================================${NC}"
