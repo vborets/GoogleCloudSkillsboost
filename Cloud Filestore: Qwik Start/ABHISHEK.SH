@@ -14,6 +14,33 @@ RESET_FORMAT=$(tput sgr0)
 BOLD_TEXT=$(tput bold)
 ITALIC_TEXT=$(tput sitm)
 UNDERLINE_TEXT=$(tput smul)
+
+# Spinner function
+spinner() {
+    local pid=$!
+    local delay=0.1
+    local spinstr='|/-\'
+    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+        local temp=${spinstr#?}
+        printf " [%c]  " "$spinstr"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b"
+    done
+    printf "    \b\b\b\b"
+}
+
+# Function to run command with spinner
+run_with_spinner() {
+    local command="$1"
+    local message="$2"
+    
+    echo -n "${YELLOW_TEXT}${BOLD_TEXT}$message... ${RESET_FORMAT}"
+    (eval "$command" > /dev/null 2>&1) &
+    spinner
+    echo "${GREEN_TEXT}✓${RESET_FORMAT}"
+}
+
 clear # Clear the terminal screen
 
 # --- Script Header ---
@@ -31,26 +58,31 @@ read ZONE
 export ZONE
 
 # Enable the required API
-echo "${GREEN_TEXT}${BOLD_TEXT}Enabling the Filestore API...${RESET_FORMAT}"
-gcloud services enable file.googleapis.com
+run_with_spinner \
+    "gcloud services enable file.googleapis.com" \
+    "${GREEN_TEXT}${BOLD_TEXT}Enabling the Filestore API"
 
-# Create a Compute Engine instance
+# Create a Compute Engine instance with Debian 12 (bookworm)
 echo "${GREEN_TEXT}${BOLD_TEXT}Creating a Compute Engine instance named 'nfs-client'...${RESET_FORMAT}"
-gcloud compute instances create nfs-client \
---project=$DEVSHELL_PROJECT_ID --zone=$ZONE --machine-type=e2-medium \
---network-interface=network-tier=PREMIUM,stack-type=IPV4_ONLY,subnet=default \
---metadata=enable-oslogin=true \
---maintenance-policy=MIGRATE \
---provisioning-model=STANDARD \
---scopes=https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/trace.append --tags=http-server \
---create-disk=auto-delete=yes,boot=yes,device-name=nfs-client,image=projects/debian-cloud/global/images/debian-11-bullseye-v20231010,mode=rw,size=10,type=projects/$DEVSHELL_PROJECT_ID/zones/$ZONE/diskTypes/pd-balanced --no-shielded-secure-boot --shielded-vtpm --shielded-integrity-monitoring --labels=goog-ec-src=vm_add-gcloud --reservation-affinity=any
+run_with_spinner \
+    "gcloud compute instances create nfs-client \
+    --project=$DEVSHELL_PROJECT_ID --zone=$ZONE --machine-type=e2-medium \
+    --network-interface=network-tier=PREMIUM,stack-type=IPV4_ONLY,subnet=default \
+    --metadata=enable-oslogin=true \
+    --maintenance-policy=MIGRATE \
+    --provisioning-model=STANDARD \
+    --scopes=https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/trace.append --tags=http-server \
+    --create-disk=auto-delete=yes,boot=yes,device-name=nfs-client,image=projects/debian-cloud/global/images/debian-12-bookworm-v20231010,mode=rw,size=10,type=projects/$DEVSHELL_PROJECT_ID/zones/$ZONE/diskTypes/pd-balanced --no-shielded-secure-boot --shielded-vtpm --shielded-integrity-monitoring --labels=goog-ec-src=vm_add-gcloud --reservation-affinity=any" \
+    "Creating Compute Engine instance"
 
 # Create a Filestore instance
 echo "${GREEN_TEXT}${BOLD_TEXT}Creating a Filestore instance named 'nfs-server'...${RESET_FORMAT}"
-gcloud filestore instances create nfs-server \
---zone=$ZONE --tier=BASIC_HDD \
---file-share=name="vol1",capacity=1TB \
---network=name="default"
+run_with_spinner \
+    "gcloud filestore instances create nfs-server \
+    --zone=$ZONE --tier=BASIC_HDD \
+    --file-share=name=\"vol1\",capacity=1TB \
+    --network=name=\"default\"" \
+    "Creating Filestore instance"
 
 # Final message
 echo
