@@ -78,44 +78,44 @@ gcloud compute instance-templates create instance-template-2 \
     --metadata=startup-script-url=gs://spls/gsp216/startup.sh \
     --region=$REGION
 
+echo "Waiting for instance templates to be created..."
+sleep 30
+
 # Create managed instance group for zone A
 echo "Creating instance group in $ZONE_A..."
 gcloud compute instance-groups managed create instance-group-1 \
     --template=instance-template-1 \
+    --base-instance-name=instance-group-1 \
     --size=1 \
-    --zone=$ZONE_A \
-    --region=$REGION
+    --zone=$ZONE_A
 
 # Create managed instance group for zone B
 echo "Creating instance group in $ZONE_B..."
 gcloud compute instance-groups managed create instance-group-2 \
     --template=instance-template-2 \
+    --base-instance-name=instance-group-2 \
     --size=1 \
-    --zone=$ZONE_B \
-    --region=$REGION
+    --zone=$ZONE_B
 
-# Configure autoscaling for both instance groups
+echo "Waiting for instance groups to be created..."
+sleep 60
+
+# Configure autoscaling for both instance groups (corrected command)
 echo "Configuring autoscaling..."
 gcloud compute instance-groups managed set-autoscaling instance-group-1 \
     --zone=$ZONE_A \
     --min-num-replicas=1 \
     --max-num-replicas=1 \
-    --target-cpu-utilization=0.8 \
-    --cool-down-period=45
+    --target-cpu-utilization=0.8
 
 gcloud compute instance-groups managed set-autoscaling instance-group-2 \
     --zone=$ZONE_B \
     --min-num-replicas=1 \
     --max-num-replicas=1 \
-    --target-cpu-utilization=0.8 \
-    --cool-down-period=45
+    --target-cpu-utilization=0.8
 
 echo "Instance groups created and configured!"
 echo ""
-
-# Wait for instances to be created
-echo "Waiting for instances to be ready..."
-sleep 60
 
 # Create utility VM
 echo "Creating utility VM..."
@@ -125,41 +125,80 @@ gcloud compute instances create utility-vm \
     --subnet=subnet-a \
     --private-network-ip=10.10.20.50 \
     --zone=$UTILITY_ZONE \
-    --region=$REGION
+    --tags=lb-backend
 
 echo "Utility VM created!"
 echo ""
 
+# Wait for all instances to be ready
+echo "Waiting for all instances to be fully ready..."
+sleep 90
+
 # Verify backends
 echo "=== Verifying Backends ==="
-echo "Waiting for instances to be fully ready..."
-sleep 30
 
-# Get internal IPs of the instances
-INSTANCE_1_IP=$(gcloud compute instances list --filter="name:instance-group-1" --format="value(networkInterfaces[0].networkIP)" --zone=$ZONE_A)
-INSTANCE_2_IP=$(gcloud compute instances list --filter="name:instance-group-2" --format="value(networkInterfaces[0].networkIP)" --zone=$ZONE_B)
+# Get internal IPs of the instances (corrected filtering)
+INSTANCE_1_IP=$(gcloud compute instances list --filter="name~'instance-group-1.*'" --format="value(networkInterfaces[0].networkIP)" --zone=$ZONE_A)
+INSTANCE_2_IP=$(gcloud compute instances list --filter="name~'instance-group-2.*'" --format="value(networkInterfaces[0].networkIP)" --zone=$ZONE_B)
 
 echo "Instance 1 IP: $INSTANCE_1_IP"
 echo "Instance 2 IP: $INSTANCE_2_IP"
 echo ""
 
+# If IPs are empty, use default IPs
+if [ -z "$INSTANCE_1_IP" ]; then
+    INSTANCE_1_IP="10.10.20.2"
+    echo "Using default IP for instance 1: $INSTANCE_1_IP"
+fi
+
+if [ -z "$INSTANCE_2_IP" ]; then
+    INSTANCE_2_IP="10.10.30.2"
+    echo "Using default IP for instance 2: $INSTANCE_2_IP"
+fi
+
 # Test connectivity via utility VM
 echo "Testing connectivity through utility VM..."
 echo "This may take a moment..."
 
-# SSH into utility VM and test connectivity
+# SSH into utility VM and test connectivity (with error handling)
 gcloud compute ssh utility-vm --zone=$UTILITY_ZONE --command="
-    echo 'Testing connection to instance-group-1...'
-    curl -s $INSTANCE_1_IP | grep -E '(Server Hostname|Server Location|Client IP)'
+    echo 'Testing connection to instance-group-1 at $INSTANCE_1_IP...'
+    max_attempts=3
+    for i in \$(seq 1 \$max_attempts); do
+        if curl -s --connect-timeout 10 $INSTANCE_1_IP > /dev/null; then
+            echo '✓ Successfully connected to instance-group-1'
+            curl -s $INSTANCE_1_IP | grep -E '(Server Hostname|Server Location|Client IP)' | head -3
+            break
+        else
+            echo 'Attempt \$i failed, retrying...'
+            sleep 10
+        fi
+        if [ \$i -eq \$max_attempts ]; then
+            echo '✗ Failed to connect to instance-group-1 after \$max_attempts attempts'
+        fi
+    done
+    
     echo ''
-    echo 'Testing connection to instance-group-2...'
-    curl -s $INSTANCE_2_IP | grep -E '(Server Hostname|Server Location|Client IP)'
+    echo 'Testing connection to instance-group-2 at $INSTANCE_2_IP...'
+    for i in \$(seq 1 \$max_attempts); do
+        if curl -s --connect-timeout 10 $INSTANCE_2_IP > /dev/null; then
+            echo '✓ Successfully connected to instance-group-2'
+            curl -s $INSTANCE_2_IP | grep -E '(Server Hostname|Server Location|Client IP)' | head -3
+            break
+        else
+            echo 'Attempt \$i failed, retrying...'
+            sleep 10
+        fi
+        if [ \$i -eq \$max_attempts ]; then
+            echo '✗ Failed to connect to instance-group-2 after \$max_attempts attempts'
+        fi
+    done
     echo ''
     echo 'Backend verification complete!'
-"
+" || echo "SSH connection failed, but continuing with setup..."
 
 echo ""
-echo "Backends verified successfully!"
+echo "Backend verification attempted!"
 echo ""
 
 # Task 3: Configure the Internal Load Balancer
@@ -174,7 +213,7 @@ gcloud compute health-checks create tcp my-ilb-health-check \
 # Create backend service
 echo "Creating backend service..."
 gcloud compute backend-services create my-ilb-backend-service \
-    --load-balancing-scheme=internal \
+    --load-balancing-scheme=INTERNAL \
     --protocol=TCP \
     --health-checks=my-ilb-health-check \
     --health-checks-region=$REGION \
@@ -192,10 +231,17 @@ gcloud compute backend-services add-backend my-ilb-backend-service \
     --instance-group-zone=$ZONE_B \
     --region=$REGION
 
+# Reserve static IP address
+echo "Reserving static IP address..."
+gcloud compute addresses create my-ilb-ip \
+    --region=$REGION \
+    --subnet=subnet-b \
+    --addresses=10.10.30.5
+
 # Create forwarding rule
 echo "Creating forwarding rule..."
 gcloud compute forwarding-rules create my-ilb \
-    --load-balancing-scheme=internal \
+    --load-balancing-scheme=INTERNAL \
     --network=my-internal-app \
     --subnet=subnet-b \
     --address=10.10.30.5 \
@@ -208,36 +254,63 @@ gcloud compute forwarding-rules create my-ilb \
 echo "Internal Load Balancer configuration complete!"
 echo ""
 
+# Wait for load balancer to be ready
+echo "Waiting for load balancer to be fully operational..."
+sleep 60
+
 # Final verification
 echo "=== Final Verification ==="
 echo "Load Balancer IP: 10.10.30.5"
 echo ""
-echo "To test the load balancer, SSH into utility-vm and run:"
-echo "curl 10.10.30.5"
-echo ""
-echo "You should see responses from different backend instances."
 
-# Test the load balancer
+# Test the load balancer (with error handling)
 echo "Testing load balancer..."
 gcloud compute ssh utility-vm --zone=$UTILITY_ZONE --command="
     echo 'Testing Load Balancer (10.10.30.5):'
+    max_attempts=3
+    success=false
+    for i in \$(seq 1 \$max_attempts); do
+        if curl -s --connect-timeout 10 10.10.30.5 > /dev/null; then
+            echo '✓ Load Balancer is working!'
+            echo 'Response from backend:'
+            curl -s 10.10.30.5 | grep -E '(Server Hostname|Server Location)' | head -2
+            success=true
+            break
+        else
+            echo 'Attempt \$i failed, retrying in 10 seconds...'
+            sleep 10
+        fi
+    done
+    
+    if ! \$success; then
+        echo '✗ Load Balancer test failed after \$max_attempts attempts'
+        echo 'This might be normal if instances are still initializing.'
+    fi
+    
+    echo ''
+    echo 'Testing multiple requests to see load balancing in action:'
     for i in {1..3}; do
-        echo 'Attempt' \$i ':'
-        curl -s 10.10.30.5 | grep -E '(Server Hostname|Server Location)'
-        echo '---'
+        echo 'Request' \$i ':'
+        curl -s 10.10.30.5 | grep -E 'Server Hostname|Server Location' | head -1
         sleep 2
     done
-"
+" || echo "SSH test failed, but setup is complete. You can test manually later."
 
 echo ""
 echo "=================================================="
-echo "All tasks completed successfully!"
+echo "Setup completed!"
+echo ""
 echo "Infrastructure Summary:"
 echo "- Firewall rules: app-allow-http, app-allow-health-check"
 echo "- Instance templates: instance-template-1, instance-template-2"
-echo "- Instance groups: instance-group-1, instance-group-2"
-echo "- Internal Load Balancer: my-ilb (10.10.30.5)"
-echo "- Utility VM: utility-vm"
+echo "- Instance groups: instance-group-1 (zone: $ZONE_A), instance-group-2 (zone: $ZONE_B)"
+echo "- Internal Load Balancer: my-ilb (IP: 10.10.30.5)"
+echo "- Utility VM: utility-vm (zone: $UTILITY_ZONE)"
+echo ""
+echo "Manual Testing Commands:"
+echo "1. SSH to utility VM: gcloud compute ssh utility-vm --zone=$UTILITY_ZONE"
+echo "2. Test load balancer: curl 10.10.30.5"
+echo "3. Test individual backends: curl $INSTANCE_1_IP and curl $INSTANCE_2_IP"
 echo ""
 echo "Thank you for following Dr. Abhishek Cloud Tutorial!"
 echo "Don't forget to subscribe: https://www.youtube.com/@drabhishek.5460/videos"
