@@ -8,7 +8,12 @@
 ### ©Credit
 - **DM for credit or removal request (no copyright intended) ©All rights and credits for the original content belong to Google Cloud [Google Cloud Skill Boost website](https://www.cloudskillsboost.google/)** 🙏
 
-
+```
+export ZONE_1=
+```
+```
+export ZONE_2=
+```
 
 ```bash
 curl -LO https://raw.githubusercontent.com/Itsabhishek7py/GoogleCloudSkillsboost/refs/heads/main/Building%20a%20High%20throughput%20VPN/abhishek.sh
