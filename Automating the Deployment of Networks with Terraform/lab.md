@@ -7,15 +7,10 @@
 - **DM for credit or removal request (no copyright intended) ©All rights and credits for the original content belong to Google Cloud [Google Cloud Skill Boost website](https://www.cloudskillsboost.google/)** 🙏
 
 ```
-
 export ZONE_1=
-
 export REGION_1=
-
 export ZONE_2=
-
 export REGION_2=
-
 ```
 
 ```bash
