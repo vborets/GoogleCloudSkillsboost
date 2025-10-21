@@ -280,7 +280,7 @@ remove_files
 
 echo -e "\n${CYAN}${BOLD}"
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║                            Thank you               ║"
+echo "║              Thank you for using this script!               ║"
 echo "║         Don't forget to subscribe to Dr. Abhishek           ║"
 echo "║               for more amazing cloud tutorials!             ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
