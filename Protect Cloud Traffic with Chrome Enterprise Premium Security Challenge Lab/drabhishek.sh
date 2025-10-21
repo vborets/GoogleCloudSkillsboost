@@ -114,7 +114,7 @@ echo -n "${CYAN}${BOLD}Fetch the developer email and prepare details file${RESET
 EMAIL="$(gcloud config get-value core/account)"
 
 cat > details.json << EOF
-  App name: cloudwalabanda
+  App name: drabhishek
   Authorized domains: $AUTH_DOMAIN
   Developer contact email: $EMAIL
 EOF
