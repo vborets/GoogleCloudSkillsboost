@@ -1,154 +1,98 @@
 #!/bin/bash
-
-
-DARK_BLUE=$'\033[38;5;27m'
-TEAL=$'\033[38;5;50m'
-PURPLE=$'\033[38;5;129m'
-ORANGE=$'\033[38;5;208m'
-LIME=$'\033[38;5;118m'
-PINK=$'\033[38;5;200m'
-RED=$'\033[38;5;196m'
-RESET=$'\033[0m'
-BOLD=$'\033[1m'
-DIM=$'\033[2m'
-
-
-DIVIDER="${DARK_BLUE}${BOLD}┃${RESET}"
-TOP_CORNER="${DARK_BLUE}${BOLD}╭${RESET}"
-BOTTOM_CORNER="${DARK_BLUE}${BOLD}╰${RESET}"
-LINE="${DARK_BLUE}${BOLD}─${RESET}"
-
+BLACK_TEXT=$'\033[0;90m'
+RED_TEXT=$'\033[0;91m'
+GREEN_TEXT=$'\033[0;92m'
+YELLOW_TEXT=$'\033[0;93m'
+BLUE_TEXT=$'\033[0;94m'
+MAGENTA_TEXT=$'\033[0;95m'
+CYAN_TEXT=$'\033[0;96m'
+WHITE_TEXT=$'\033[0;97m'
+RESET_FORMAT=$'\033[0m'
+BOLD_TEXT=$'\033[1m'
+UNDERLINE_TEXT=$'\033[4m'
 clear
 
-# Modern Header
+# Welcome Banner
 echo
-echo "${TOP_CORNER}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${RESET}"
-echo "${DARK_BLUE}${BOLD}             WELCOME TO DR ABHISHEK               ${RESET}"
-echo "${DARK_BLUE}${BOLD}                CLOUD TUTORIAL            ${RESET}"
-echo "${BOTTOM_CORNER}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${LINE}${RESET}"
+echo "${BLUE_TEXT}${BOLD_TEXT}╔══════════════════════════════════════════════════════════════╗${RESET_FORMAT}"
+echo "${BLUE_TEXT}${BOLD_TEXT}║                                                              ║${RESET_FORMAT}"
+echo "${BLUE_TEXT}${BOLD_TEXT}║    🎯 WELCOME TO DR. ABHISHEK CLOUD TUTORIALS 🎯           ║${RESET_FORMAT}"
+echo "${BLUE_TEXT}${BOLD_TEXT}║                                                              ║${RESET_FORMAT}"
+echo "${BLUE_TEXT}${BOLD_TEXT}║         Mastering Cloud Technologies with Excellence         ║${RESET_FORMAT}"
+echo "${BLUE_TEXT}${BOLD_TEXT}║                                                              ║${RESET_FORMAT}"
+echo "${BLUE_TEXT}${BOLD_TEXT}╚══════════════════════════════════════════════════════════════╝${RESET_FORMAT}"
+echo
+echo "${CYAN_TEXT}${BOLD_TEXT}==============================================${RESET_FORMAT}"
+echo "${CYAN_TEXT}${BOLD_TEXT}             INITIATING EXECUTION          ${RESET_FORMAT}"
+echo "${CYAN_TEXT}${BOLD_TEXT}==============================================${RESET_FORMAT}"
 echo
 
-# Function to display progress spinner
-spinner() {
-    local pid=$!
-    local delay=0.1
-    local spinstr='|/-\'
-    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
-        local temp=${spinstr#?}
-        printf " [%c]  " "$spinstr"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-        printf "\b\b\b\b\b\b"
-    done
-    printf "    \b\b\b\b"
-}
+# User input for ZONE
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 1: Set the compute zone.${RESET_FORMAT}"
+read -p "${CYAN_TEXT}Enter the ZONE: ${RESET_FORMAT}" ZONE
+export ZONE
 
-# Function to deploy services with retry logic
-deploy_service() {
-    local service_name=$1
-    local image_name=$2
-    local allow_unauthenticated=$3
-    local max_retries=3
-    local retry_count=0
-    
-    while [ $retry_count -lt $max_retries ]; do
-        echo -n "${TEAL}${BOLD}Deploying $service_name...${RESET}"
-        (gcloud builds submit --tag gcr.io/$GOOGLE_CLOUD_PROJECT/$image_name && \
-         gcloud run deploy $service_name \
-            --image gcr.io/$GOOGLE_CLOUD_PROJECT/$image_name \
-            --platform managed \
-            --region $REGION \
-            $allow_unauthenticated \
-            --max-instances=1) > /dev/null 2>&1 &
-        spinner
-        
-        if [ $? -eq 0 ]; then
-            echo "${LIME}${BOLD}✔ $service_name deployed successfully${RESET}"
-            return 0
-        else
-            retry_count=$((retry_count+1))
-            echo "${RED}${BOLD}✘ Deployment failed, retrying ($retry_count/$max_retries)...${RESET}"
-            sleep 5
-        fi
-    done
-    
-    echo "${RED}${BOLD}✘ Failed to deploy $service_name after $max_retries attempts${RESET}"
-    return 1
-}
-
-# Step 1: Zone Configuration
-echo "${PURPLE}${BOLD}▐▓▒▌ STEP 1: CONFIGURE COMPUTE ZONE ${DARK_BLUE}${BOLD}◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈${RESET}"
-echo
-while true; do
-    read -p "${TEAL}${BOLD}🌍 Enter Compute Zone (e.g., us-central1-a): ${RESET}" ZONE
-    if [[ -n "$ZONE" ]]; then
-        export ZONE
-        break
-    else
-        echo "${RED}Zone cannot be empty. Please try again.${RESET}"
-    fi
-done
-
+# Set PROJECT_ID
 export PROJECT_ID=$(gcloud config get-value project)
 export PROJECT_ID=$DEVSHELL_PROJECT_ID
 
-echo "${TEAL}${BOLD}Configuring compute zone and region...${RESET}"
+# Configure compute zone and region
 gcloud config set compute/zone $ZONE
 export REGION=${ZONE%-*}
 gcloud config set compute/region $REGION
-echo "${LIME}${BOLD}✔ Compute zone ($ZONE) and region ($REGION) configured${RESET}"
+
+echo "${GREEN_TEXT}${BOLD_TEXT}Compute zone and region configured successfully!${RESET_FORMAT}"
 echo
 
-# Step 2: Pub/Sub Setup
-echo "${PURPLE}${BOLD}▐▓▒▌ STEP 2: PUB/SUB CONFIGURATION ${DARK_BLUE}${BOLD}◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈${RESET}"
-echo
-echo "${TEAL}${BOLD}Creating Pub/Sub topic...${RESET}"
+# Create Pub/Sub topic
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 2: Creating a Pub/Sub topic...${RESET_FORMAT}"
 gcloud pubsub topics create new-lab-report
-echo "${LIME}${BOLD}✔ Pub/Sub topic 'new-lab-report' created${RESET}"
+echo "${GREEN_TEXT}Pub/Sub topic 'new-lab-report' created successfully!${RESET_FORMAT}"
 echo
 
-# Step 3: Cloud Run Setup
-echo "${PURPLE}${BOLD}▐▓▒▌ STEP 3: CLOUD RUN SETUP ${DARK_BLUE}${BOLD}◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈${RESET}"
-echo
-echo "${TEAL}${BOLD}Enabling Cloud Run API...${RESET}"
+# Enable Cloud Run API
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 3: Enabling Cloud Run API...${RESET_FORMAT}"
 gcloud services enable run.googleapis.com
-echo "${LIME}${BOLD}✔ Cloud Run API enabled${RESET}"
+echo "${GREEN_TEXT}Cloud Run API enabled successfully!${RESET_FORMAT}"
 echo
 
-# Step 4: Repository Setup
-echo "${PURPLE}${BOLD}▐▓▒▌ STEP 4: REPOSITORY SETUP ${DARK_BLUE}${BOLD}◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈${RESET}"
-echo
-echo "${TEAL}${BOLD}Cloning Pet Theory repository...${RESET}"
+# Clone the repository
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 4: Cloning the Pet Theory repository...${RESET_FORMAT}"
 git clone https://github.com/rosera/pet-theory.git
-echo "${LIME}${BOLD}✔ Repository cloned successfully${RESET}"
+echo "${GREEN_TEXT}Repository cloned successfully!${RESET_FORMAT}"
 echo
 
-# Step 5: Lab Service Setup
-echo "${PURPLE}${BOLD}▐▓▒▌ STEP 5: LAB SERVICE SETUP ${DARK_BLUE}${BOLD}◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈${RESET}"
-echo
-echo "${TEAL}${BOLD}Configuring lab-service...${RESET}"
+# Navigate to lab-service directory and set up
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 5: Setting up the lab-service...${RESET_FORMAT}"
 cd pet-theory/lab05/lab-service
-npm install express body-parser @google-cloud/pubsub
+npm install express
+npm install body-parser
+npm install @google-cloud/pubsub
 
-# Create configuration files
-cat > package.json <<EOF
+# Create package.json for lab-service
+cat > package.json <<EOF_CP
 {
   "name": "lab05",
   "version": "1.0.0",
-  "description": "Lab service for Pet Theory",
+  "description": "This is lab05 of the Pet Theory labs",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [],
+  "author": "Dr. Abhishek Cloud Tutorials",
+  "license": "ISC",
   "dependencies": {
     "@google-cloud/pubsub": "^4.0.0",
     "body-parser": "^1.20.2",
     "express": "^4.18.2"
   }
 }
-EOF
+EOF_CP
 
-cat > index.js <<EOF
+# Create index.js for lab-service
+cat > index.js <<EOF_CP
 const {PubSub} = require('@google-cloud/pubsub');
 const pubsub = new PubSub();
 const express = require('express');
@@ -157,7 +101,7 @@ const bodyParser = require('body-parser');
 app.use(bodyParser.json());
 const port = process.env.PORT || 8080;
 app.listen(port, () => {
-  console.log('Lab service listening on port', port);
+  console.log('Listening on port', port);
 });
 app.post('/', async (req, res) => {
   try {
@@ -169,256 +113,395 @@ app.post('/', async (req, res) => {
     console.log(ex);
     res.status(500).send(ex);
   }
-});
+})
 async function publishPubSubMessage(labReport) {
   const buffer = Buffer.from(JSON.stringify(labReport));
   await pubsub.topic('new-lab-report').publish(buffer);
 }
-EOF
+EOF_CP
 
-cat > Dockerfile <<EOF
-FROM node:14
+# Create Dockerfile for lab-service
+cat > Dockerfile <<EOF_CP
+FROM node:18
 WORKDIR /usr/src/app
-COPY package*.json ./
+COPY package.json package*.json ./
 RUN npm install --only=production
 COPY . .
-CMD ["npm", "start"]
-EOF
+CMD [ "npm", "start" ]
+EOF_CP
 
-echo "${LIME}${BOLD}✔ lab-service configured successfully${RESET}"
+echo "${GREEN_TEXT}${BOLD_TEXT}lab-service setup completed successfully!${RESET_FORMAT}"
 echo
 
-# Step 6: Email Service Setup
-echo "${PURPLE}${BOLD}▐▓▒▌ STEP 6: EMAIL SERVICE SETUP ${DARK_BLUE}${BOLD}◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈${RESET}"
-echo
-echo "${TEAL}${BOLD}Configuring email-service...${RESET}"
+# Navigate to email-service directory and set up
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 6: Setting up the email-service...${RESET_FORMAT}"
 cd ~/pet-theory/lab05/email-service
-npm install express body-parser
+npm install express
+npm install body-parser
 
-cat > package.json <<EOF
+# Create package.json for email-service
+cat > package.json <<EOF_CP
 {
-  "name": "email-service",
-  "version": "1.0.0",
-  "description": "Email service for Pet Theory",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
-  "dependencies": {
-    "body-parser": "^1.20.2",
-    "express": "^4.18.2"
+    "name": "lab05",
+    "version": "1.0.0",
+    "description": "This is lab05 of the Pet Theory labs",
+    "main": "index.js",
+    "scripts": {
+      "start": "node index.js",
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "Dr. Abhishek Cloud Tutorials",
+    "license": "ISC",
+    "dependencies": {
+      "body-parser": "^1.20.2",
+      "express": "^4.18.2"
+    }
   }
-}
-EOF
+EOF_CP
 
-cat > index.js <<EOF
+# Create index.js for email-service
+cat > index.js <<EOF_CP
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
+
 const port = process.env.PORT || 8080;
 app.listen(port, () => {
-  console.log('Email service listening on port', port);
+  console.log('Listening on port', port);
 });
+
 app.post('/', async (req, res) => {
   const labReport = decodeBase64Json(req.body.message.data);
   try {
-    console.log(\`Email Service: Report \${labReport.id} processing...\`);
+    console.log(`Email Service: Report ${labReport.id} trying...`);
     sendEmail();
-    console.log(\`Email Service: Report \${labReport.id} completed\`);
+    console.log(`Email Service: Report ${labReport.id} success :-)`);
     res.status(204).send();
   }
   catch (ex) {
-    console.log(\`Email Service: Report \${labReport.id} failed: \${ex}\`);
+    console.log(`Email Service: Report ${labReport.id} failure: ${ex}`);
     res.status(500).send();
   }
-});
+})
+
 function decodeBase64Json(data) {
   return JSON.parse(Buffer.from(data, 'base64').toString());
 }
-function sendEmail() {
-  console.log('Sending email notification');
-}
-EOF
 
-cat > Dockerfile <<EOF
-FROM node:14
+function sendEmail() {
+  console.log('Sending email');
+}
+EOF_CP
+
+# Create Dockerfile for email-service
+cat > Dockerfile <<EOF_CP
+FROM node:18
 WORKDIR /usr/src/app
-COPY package*.json ./
+COPY package.json package*.json ./
 RUN npm install --only=production
 COPY . .
-CMD ["npm", "start"]
-EOF
+CMD [ "npm", "start" ]
+EOF_CP
 
-echo "${LIME}${BOLD}✔ email-service configured successfully${RESET}"
+echo "${GREEN_TEXT}${BOLD_TEXT}email-service setup completed successfully!${RESET_FORMAT}"
 echo
 
-# Step 7: Service Account Creation
-echo "${PURPLE}${BOLD}▐▓▒▌ STEP 7: SERVICE ACCOUNT SETUP ${DARK_BLUE}${BOLD}◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈${RESET}"
-echo
-echo "${TEAL}${BOLD}Creating service account...${RESET}"
-gcloud iam service-accounts create pubsub-cloud-run-invoker \
-  --display-name "PubSub Cloud Run Invoker"
-echo "${LIME}${BOLD}✔ Service account created${RESET}"
+# Service Account Creation
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 7: Creating a service account for Pub/Sub Cloud Run Invoker...${RESET_FORMAT}"
+gcloud iam service-accounts create pubsub-cloud-run-invoker --display-name "PubSub Cloud Run Invoker"
+echo "${GREEN_TEXT}Service account 'pubsub-cloud-run-invoker' created successfully!${RESET_FORMAT}"
 echo
 
-# Step 8: IAM Policy Binding
-echo "${PURPLE}${BOLD}▐▓▒▌ STEP 8: IAM PERMISSIONS ${DARK_BLUE}${BOLD}◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈${RESET}"
+# IAM Policy Binding for Email Service
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 8: Adding IAM policy binding for email-service...${RESET_FORMAT}"
+gcloud run services add-iam-policy-binding email-service --member=serviceAccount:pubsub-cloud-run-invoker@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com --role=roles/run.invoker --region $REGION --project=$DEVSHELL_PROJECT_ID --platform managed
+echo "${GREEN_TEXT}IAM policy binding added successfully!${RESET_FORMAT}"
 echo
-echo "${TEAL}${BOLD}Configuring IAM permissions...${RESET}"
-gcloud run services add-iam-policy-binding email-service \
-  --member="serviceAccount:pubsub-cloud-run-invoker@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com" \
-  --role="roles/run.invoker" \
-  --region $REGION \
-  --platform managed
 
+# IAM Policy Binding for Pub/Sub Service Account
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 9: Adding IAM policy binding for Pub/Sub service account...${RESET_FORMAT}"
 PROJECT_NUMBER=$(gcloud projects list --filter="qwiklabs-gcp" --format='value(PROJECT_NUMBER)')
-gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
-  --member="serviceAccount:service-$PROJECT_NUMBER@gcp-sa-pubsub.iam.gserviceaccount.com" \
-  --role="roles/iam.serviceAccountTokenCreator"
-
-echo "${LIME}${BOLD}✔ IAM permissions configured${RESET}"
+gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT --member=serviceAccount:service-$PROJECT_NUMBER@gcp-sa-pubsub.iam.gserviceaccount.com --role=roles/iam.serviceAccountTokenCreator
+echo "${GREEN_TEXT}IAM policy binding for Pub/Sub service account added successfully!${RESET_FORMAT}"
 echo
 
-# Step 9: Email Service Deployment
-echo "${PURPLE}${BOLD}▐▓▒▌ STEP 9: EMAIL SERVICE DEPLOYMENT ${DARK_BLUE}${BOLD}◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈${RESET}"
-echo
-deploy_service "email-service" "email-service" "--no-allow-unauthenticated"
-EMAIL_SERVICE_URL=$(gcloud run services describe email-service --platform managed --region=$REGION --format="value(status.address.url)")
-echo "${LIME}${BOLD}✔ Email service URL: $EMAIL_SERVICE_URL${RESET}"
-echo
+# Deploy Email Service First
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 10: Deploying the email-service...${RESET_FORMAT}"
+deploy_email_function() {
+  gcloud builds submit \
+    --tag gcr.io/$GOOGLE_CLOUD_PROJECT/email-service
 
-# Step 10: Pub/Sub Subscription
-echo "${PURPLE}${BOLD}▐▓▒▌ STEP 10: PUB/SUB SUBSCRIPTION ${DARK_BLUE}${BOLD}◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈${RESET}"
-echo
-echo "${TEAL}${BOLD}Creating Pub/Sub subscription...${RESET}"
-gcloud pubsub subscriptions create email-service-sub \
-  --topic new-lab-report \
-  --push-endpoint=$EMAIL_SERVICE_URL \
-  --push-auth-service-account=pubsub-cloud-run-invoker@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com
-echo "${LIME}${BOLD}✔ Subscription created${RESET}"
-echo
-
-# Step 11: SMS Service Setup
-echo "${PURPLE}${BOLD}▐▓▒▌ STEP 11: SMS SERVICE SETUP ${DARK_BLUE}${BOLD}◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈${RESET}"
-echo
-echo "${TEAL}${BOLD}Configuring SMS service...${RESET}"
-cd ~/pet-theory/lab05/sms-service
-npm install express body-parser
-
-cat > package.json <<EOF
-{
-  "name": "sms-service",
-  "version": "1.0.0",
-  "description": "SMS service for Pet Theory",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
-  "dependencies": {
-    "body-parser": "^1.20.2",
-    "express": "^4.18.2"
-  }
+  gcloud run deploy email-service \
+    --image gcr.io/$GOOGLE_CLOUD_PROJECT/email-service \
+    --platform managed \
+    --region $REGION \
+    --no-allow-unauthenticated \
+    --max-instances=1
 }
-EOF
 
-cat > index.js <<EOF
+deploy_success=false
+retry_count=0
+MAX_RETRIES=3
+
+while [ "$deploy_success" = false ] && [ $retry_count -lt $MAX_RETRIES ]; do
+  echo "${YELLOW_TEXT}Deployment attempt $(($retry_count+1))/${MAX_RETRIES}${RESET_FORMAT}"
+  if deploy_email_function; then
+    echo "${GREEN_TEXT}email-service deployed successfully!${RESET_FORMAT}"
+    deploy_success=true
+  else
+    retry_count=$((retry_count+1))
+    if [ $retry_count -lt $MAX_RETRIES ]; then
+      echo "${RED_TEXT}Deployment failed. Retrying in 10 seconds...${RESET_FORMAT}"
+      sleep 10
+    else
+      echo "${RED_TEXT}${BOLD_TEXT}Maximum retry attempts reached. Continuing...${RESET_FORMAT}"
+      break
+    fi
+  fi
+done
+echo
+
+# Get Email Service URL
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 11: Retrieving the email-service URL...${RESET_FORMAT}"
+EMAIL_SERVICE_URL=$(gcloud run services describe email-service --platform managed --region=$REGION --format="value(status.address.url)" 2>/dev/null || echo "")
+if [ -n "$EMAIL_SERVICE_URL" ]; then
+  echo "${GREEN_TEXT}Email-service URL: ${EMAIL_SERVICE_URL}${RESET_FORMAT}"
+else
+  echo "${RED_TEXT}Failed to retrieve email-service URL${RESET_FORMAT}"
+fi
+echo
+
+# Create Pub/Sub Subscription for Email Service
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 12: Creating a Pub/Sub subscription for email-service...${RESET_FORMAT}"
+if [ -n "$EMAIL_SERVICE_URL" ]; then
+  gcloud pubsub subscriptions create email-service-sub --topic new-lab-report --push-endpoint=$EMAIL_SERVICE_URL --push-auth-service-account=pubsub-cloud-run-invoker@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com
+  echo "${GREEN_TEXT}Pub/Sub subscription 'email-service-sub' created successfully!${RESET_FORMAT}"
+else
+  echo "${RED_TEXT}Skipping subscription creation - email-service URL not available${RESET_FORMAT}"
+fi
+echo
+
+# Setup SMS Service
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 13: Setting up the SMS service...${RESET_FORMAT}"
+cd ~/pet-theory/lab05/sms-service
+npm install express
+npm install body-parser
+
+# Create package.json for SMS service
+cat > package.json <<EOF_CP
+{
+    "name": "lab05",
+    "version": "1.0.0",
+    "description": "This is lab05 of the Pet Theory labs",
+    "main": "index.js",
+    "scripts": {
+      "start": "node index.js",
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "Dr. Abhishek Cloud Tutorials",
+    "license": "ISC",
+    "dependencies": {
+      "body-parser": "^1.20.2",
+      "express": "^4.18.2"
+    }
+  }
+EOF_CP
+
+# Create index.js for SMS service
+cat > index.js <<EOF_CP
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
+
 const port = process.env.PORT || 8080;
 app.listen(port, () => {
-  console.log('SMS service listening on port', port);
+  console.log('Listening on port', port);
 });
+
 app.post('/', async (req, res) => {
   const labReport = decodeBase64Json(req.body.message.data);
   try {
-    console.log(\`SMS Service: Report \${labReport.id} processing...\`);
+    console.log(`SMS Service: Report ${labReport.id} trying...`);
     sendSms();
-    console.log(\`SMS Service: Report \${labReport.id} completed\`);
+
+    console.log(`SMS Service: Report ${labReport.id} success :-)`);    
     res.status(204).send();
   }
   catch (ex) {
-    console.log(\`SMS Service: Report \${labReport.id} failed: \${ex}\`);
+    console.log(`SMS Service: Report ${labReport.id} failure: ${ex}`);
     res.status(500).send();
   }
-});
+})
+
 function decodeBase64Json(data) {
   return JSON.parse(Buffer.from(data, 'base64').toString());
 }
-function sendSms() {
-  console.log('Sending SMS notification');
-}
-EOF
 
-cat > Dockerfile <<EOF
-FROM node:14
+function sendSms() {
+  console.log('Sending SMS');
+}
+EOF_CP
+
+# Create Dockerfile for SMS service
+cat > Dockerfile <<EOF_CP
+FROM node:18
 WORKDIR /usr/src/app
-COPY package*.json ./
+COPY package.json package*.json ./
 RUN npm install --only=production
 COPY . .
-CMD ["npm", "start"]
-EOF
+CMD [ "npm", "start" ]
+EOF_CP
 
-echo "${LIME}${BOLD}✔ SMS service configured successfully${RESET}"
-echo
-
-# Step 12: SMS Service Deployment
-echo "${PURPLE}${BOLD}▐▓▒▌ STEP 12: SMS SERVICE DEPLOYMENT ${DARK_BLUE}${BOLD}◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈${RESET}"
-echo
-deploy_service "sms-service" "sms-service" "--no-allow-unauthenticated"
-echo "${LIME}${BOLD}✔ SMS service deployed successfully${RESET}"
+echo "${GREEN_TEXT}${BOLD_TEXT}SMS service setup completed successfully!${RESET_FORMAT}"
 echo
 
-# Step 13: Lab Report Service Deployment
-echo "${PURPLE}${BOLD}▐▓▒▌ STEP 13: LAB REPORT SERVICE DEPLOYMENT ${DARK_BLUE}${BOLD}◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈${RESET}"
-echo
-deploy_service "lab-report-service" "lab-report-service" "--allow-unauthenticated"
-LAB_REPORT_SERVICE_URL=$(gcloud run services describe lab-report-service --platform managed --region=$REGION --format="value(status.address.url)")
-echo "${LIME}${BOLD}✔ Lab report service URL: $LAB_REPORT_SERVICE_URL${RESET}"
+# Deploy SMS Service
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 14: Deploying the sms-service...${RESET_FORMAT}"
+deploy_sms_function() {
+  gcloud builds submit \
+    --tag gcr.io/$GOOGLE_CLOUD_PROJECT/sms-service
+
+  gcloud run deploy sms-service \
+    --image gcr.io/$GOOGLE_CLOUD_PROJECT/sms-service \
+    --platform managed \
+    --region $REGION \
+    --no-allow-unauthenticated \
+    --max-instances=1
+}
+
+deploy_success=false
+retry_count=0
+
+while [ "$deploy_success" = false ] && [ $retry_count -lt $MAX_RETRIES ]; do
+  echo "${YELLOW_TEXT}Deployment attempt $(($retry_count+1))/${MAX_RETRIES}${RESET_FORMAT}"
+  if deploy_sms_function; then
+    echo "${GREEN_TEXT}sms-service deployed successfully!${RESET_FORMAT}"
+    deploy_success=true
+  else
+    retry_count=$((retry_count+1))
+    if [ $retry_count -lt $MAX_RETRIES ]; then
+      echo "${RED_TEXT}Deployment failed. Retrying in 10 seconds...${RESET_FORMAT}"
+      sleep 10
+    else
+      echo "${RED_TEXT}${BOLD_TEXT}Maximum retry attempts reached. Continuing...${RESET_FORMAT}"
+      break
+    fi
+  fi
+done
 echo
 
-# Step 14: Post Reports Script
-echo "${PURPLE}${BOLD}▐▓▒▌ STEP 14: TESTING SETUP ${DARK_BLUE}${BOLD}◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈${RESET}"
+# IAM Policy Binding for SMS Service
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 15: Adding IAM policy binding for sms-service...${RESET_FORMAT}"
+gcloud run services add-iam-policy-binding sms-service --member=serviceAccount:pubsub-cloud-run-invoker@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com --role=roles/run.invoker --region $REGION --project=$DEVSHELL_PROJECT_ID --platform managed
+echo "${GREEN_TEXT}IAM policy binding added successfully!${RESET_FORMAT}"
 echo
-echo "${TEAL}${BOLD}Creating test script...${RESET}"
-cat > post-reports.sh <<EOF
+
+# Get SMS Service URL
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 16: Retrieving the sms-service URL...${RESET_FORMAT}"
+SMS_SERVICE_URL=$(gcloud run services describe sms-service --platform managed --region=$REGION --format="value(status.address.url)" 2>/dev/null || echo "")
+if [ -n "$SMS_SERVICE_URL" ]; then
+  echo "${GREEN_TEXT}SMS-service URL: ${SMS_SERVICE_URL}${RESET_FORMAT}"
+else
+  echo "${RED_TEXT}Failed to retrieve SMS-service URL${RESET_FORMAT}"
+fi
+echo
+
+# Create Pub/Sub Subscription for SMS Service
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 17: Creating a Pub/Sub subscription for sms-service...${RESET_FORMAT}"
+if [ -n "$SMS_SERVICE_URL" ]; then
+  gcloud pubsub subscriptions create sms-service-sub --topic new-lab-report --push-endpoint=$SMS_SERVICE_URL --push-auth-service-account=pubsub-cloud-run-invoker@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com
+  echo "${GREEN_TEXT}Pub/Sub subscription 'sms-service-sub' created successfully!${RESET_FORMAT}"
+else
+  echo "${RED_TEXT}Skipping subscription creation - SMS-service URL not available${RESET_FORMAT}"
+fi
+echo
+
+# Deploy Lab Report Service
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 18: Deploying the lab-report-service...${RESET_FORMAT}"
+deploy_lab_report_function() {
+  gcloud builds submit \
+    --tag gcr.io/$GOOGLE_CLOUD_PROJECT/lab-report-service
+
+  gcloud run deploy lab-report-service \
+    --image gcr.io/$GOOGLE_CLOUD_PROJECT/lab-report-service \
+    --platform managed \
+    --region $REGION \
+    --allow-unauthenticated \
+    --max-instances=1
+}
+
+deploy_success=false
+retry_count=0
+
+while [ "$deploy_success" = false ] && [ $retry_count -lt $MAX_RETRIES ]; do
+  echo "${YELLOW_TEXT}Deployment attempt $(($retry_count+1))/${MAX_RETRIES}${RESET_FORMAT}"
+  if deploy_lab_report_function; then
+    echo "${GREEN_TEXT}lab-report-service deployed successfully!${RESET_FORMAT}"
+    deploy_success=true
+  else
+    retry_count=$((retry_count+1))
+    if [ $retry_count -lt $MAX_RETRIES ]; then
+      echo "${RED_TEXT}Deployment failed. Retrying in 10 seconds...${RESET_FORMAT}"
+      sleep 10
+    else
+      echo "${RED_TEXT}${BOLD_TEXT}Maximum retry attempts reached. Continuing...${RESET_FORMAT}"
+      break
+    fi
+  fi
+done
+echo
+
+# Get Lab Report Service URL
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 19: Retrieving the lab-report-service URL...${RESET_FORMAT}"
+export LAB_REPORT_SERVICE_URL=$(gcloud run services describe lab-report-service --platform managed --region=$REGION --format="value(status.address.url)" 2>/dev/null || echo "")
+if [ -n "$LAB_REPORT_SERVICE_URL" ]; then
+  echo "${GREEN_TEXT}lab-report-service URL: ${LAB_REPORT_SERVICE_URL}${RESET_FORMAT}"
+else
+  echo "${RED_TEXT}Failed to retrieve lab-report-service URL${RESET_FORMAT}"
+fi
+echo
+
+# Create Test Script
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 20: Creating the post-reports.sh script...${RESET_FORMAT}"
+cat > post-reports.sh <<EOF_CP
 #!/bin/bash
 echo "Testing lab report service..."
 curl -X POST -H "Content-Type: application/json" -d '{"id": 12}' $LAB_REPORT_SERVICE_URL &
 curl -X POST -H "Content-Type: application/json" -d '{"id": 34}' $LAB_REPORT_SERVICE_URL &
 curl -X POST -H "Content-Type: application/json" -d '{"id": 56}' $LAB_REPORT_SERVICE_URL &
-EOF
+echo "Test requests sent successfully!"
+EOF_CP
 
-chmod +x post-reports.sh
-echo "${LIME}${BOLD}✔ Test script created${RESET}"
+chmod u+x post-reports.sh
+echo "${GREEN_TEXT}post-reports.sh script created and permissions updated successfully!${RESET_FORMAT}"
 echo
 
-# Step 15: Execute Tests
-echo "${TEAL}${BOLD}Executing test requests...${RESET}"
+# Execute Test Script
+echo "${YELLOW_TEXT}${BOLD_TEXT}Step 21: Executing the post-reports.sh script...${RESET_FORMAT}"
 ./post-reports.sh
-echo "${LIME}${BOLD}✔ Test requests sent${RESET}"
+echo "${GREEN_TEXT}post-reports.sh script executed successfully!${RESET_FORMAT}"
 echo
-
-# Cleanup
-SCRIPT_NAME="arcadecrew.sh"
-if [ -f "$SCRIPT_NAME" ]; then
-    echo "${TEAL}${BOLD}Cleaning up temporary files...${RESET}"
-    rm -- "$SCRIPT_NAME"
-    echo "${LIME}${BOLD}✔ Cleanup complete${RESET}"
-    echo
-fi
 
 # Final Completion Message
 echo
-echo "${PINK}${BOLD}╭──────────────────────────────────────────────────────────────╮${RESET}"
-echo "${PINK}${BOLD}│    🎉 Cloud Services Deployment Completed Successfully!    │${RESET}"
-echo "${PINK}${BOLD}│    🔍 Explore your services in Google Cloud Console         │${RESET}"
-echo "${PINK}${BOLD}╰──────────────────────────────────────────────────────────────╯${RESET}"
+echo "${MAGENTA_TEXT}${BOLD_TEXT}╔══════════════════════════════════════════════════════════════╗${RESET_FORMAT}"
+echo "${MAGENTA_TEXT}${BOLD_TEXT}║                                                              ║${RESET_FORMAT}"
+echo "${MAGENTA_TEXT}${BOLD_TEXT}║         🎉 LAB COMPLETED SUCCESSFULLY! 🎉                   ║${RESET_FORMAT}"
+echo "${MAGENTA_TEXT}${BOLD_TEXT}║                                                              ║${RESET_FORMAT}"
+echo "${MAGENTA_TEXT}${BOLD_TEXT}║    Thank you for using Dr. Abhishek Cloud Tutorials!        ║${RESET_FORMAT}"
+echo "${MAGENTA_TEXT}${BOLD_TEXT}║                                                              ║${RESET_FORMAT}"
+echo "${MAGENTA_TEXT}${BOLD_TEXT}╚══════════════════════════════════════════════════════════════╝${RESET_FORMAT}"
 echo
-echo "${DARK_BLUE}${BOLD}For more cloud engineering tutorials, visit:${RESET}"
-echo "${TEAL}${BOLD}   https://www.youtube.com/@drabhishek.5460/${RESET}"
+echo "${CYAN_TEXT}${BOLD_TEXT}For more cloud engineering tutorials and courses:${RESET_FORMAT}"
+echo "${GREEN_TEXT}${BOLD_TEXT}   📚 Visit: https://www.youtube.com/@drabhishek.5460/${RESET_FORMAT}"
 echo
-echo "${DIM}${DARK_BLUE}Like and subscribe for more cloud architecture content! ${RESET}"
+echo "${YELLOW_TEXT}${BOLD_TEXT}Like, Share, and Subscribe for more cloud architecture content! 🚀${RESET_FORMAT}"
+echo
+echo "${BLUE_TEXT}${BOLD_TEXT}=======================================================${RESET_FORMAT}"
+echo "${BLUE_TEXT}${BOLD_TEXT}              EXECUTION COMPLETED!                    ${RESET_FORMAT}"
+echo "${BLUE_TEXT}${BOLD_TEXT}=======================================================${RESET_FORMAT}"
 echo
