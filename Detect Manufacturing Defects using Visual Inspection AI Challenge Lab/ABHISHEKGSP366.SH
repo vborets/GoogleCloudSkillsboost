@@ -81,7 +81,7 @@ docker run -v /secrets:/secrets --rm -d --name "$CONTAINER_NAME" \
 # Task 2
 gsutil cp gs://cloud-training/gsp895/prediction_script.py .
 
-export PROJECT_ID=$(gcloud config get-value core/project)
+PROJECT_ID="qwiklabs-gcp-04-173af32791a3"
 gsutil mb gs://${PROJECT_ID}
 gsutil -m cp gs://cloud-training/gsp897/cosmetic-test-data/*.png \
 gs://${PROJECT_ID}/cosmetic-test-data/
