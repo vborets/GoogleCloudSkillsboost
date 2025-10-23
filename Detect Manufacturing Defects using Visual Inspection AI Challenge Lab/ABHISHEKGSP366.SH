@@ -44,7 +44,7 @@ echo "${GREEN_TEXT}Using defective result filename: ${BOLD_TEXT}$FILE_1${RESET_F
 echo "${GREEN_TEXT}Using non-defective result filename: ${BOLD_TEXT}$FILE_2${RESET_FORMAT}"
 echo
 
-ZONE="$(gcloud compute instances list --project=$DEVSHELL_PROJECT_ID --format='value(ZONE)' | head -n 1)"
+ZONE="us-east1-c"
 
 echo "${MAGENTA_TEXT}${BOLD_TEXT}Saving environment variables...${RESET_FORMAT}"
 
